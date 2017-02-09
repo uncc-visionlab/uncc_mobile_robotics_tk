@@ -44,7 +44,7 @@ classdef StateRenderer < handle
             end
             obj.orientationPolyPoints = [ ...
                 -0.6609 -0.6609 0.1437 0.1437 0.7471  0.1437    0.1437 -0.6609;
-                -0.2012 0.2012 0.2012 0.4023  0      -0.4023   -0.2012 -0.2012];
+                -0.2012  0.2012 0.2012 0.4023 0      -0.4023   -0.2012 -0.2012];
             obj.orientationPolyPoints=obj.orientationPolyPoints*0.8*obj.baseRadius;
             obj.body_color = [0 0 1]; % blue 'b'
             obj.arrow_color = [1 0 0]; % red 'r'           
@@ -60,9 +60,9 @@ classdef StateRenderer < handle
                 delete(obj.arrowhandle);
             end
             localpose = LocalPose(position,qorientation);
+            figure(1);
             [ox, oy] = localpose.transform(obj.boundaryPolyPoints(1,:), ...
                 obj.boundaryPolyPoints(2,:));
-            figure(1);
             obj.basehandle = plot(ox,oy,'Color',obj.body_color);
             [ox, oy] = localpose.transform(obj.orientationPolyPoints(1,:), ...
                 obj.orientationPolyPoints(2,:));         
