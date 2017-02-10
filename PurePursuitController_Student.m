@@ -102,7 +102,7 @@ classdef PurePursuitController_Student < OdometryListener
         
         function doControl(obj, pose)
             currentPos = pose.position(1:2)';
-            rpy=PurePursuitController.quat2rpy(pose.qorientation);
+            rpy=PurePursuitController_Student.quat2rpy(pose.qorientation);
             yawAngle = rpy(3);
             if (norm(obj.wayPoints(obj.goalPtIdx,:)'-currentPos) < obj.goalRadius)
                 if (obj.goalPtIdx < obj.numWayPoints)
