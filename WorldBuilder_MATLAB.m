@@ -50,26 +50,28 @@ classdef WorldBuilder_MATLAB < handle
             hold off;
             world_mat = WorldBuilder_MATLAB();
             global START_TIME;
+            global GAZEBO_SIM;
             
             rosshutdown;
             world_mat.consolePrint('Shutting down any active ROS processes....');
             pause(1);
             
-            
+            GAZEBO_SIM = false;
             WORLD_MAP_INDEX=1;
             world_mat.BUILD_GAZEBO_WORLD=1;
             ACTIVATE_KOBUKI=1;
                         
             if (world_mat.BUILD_GAZEBO_WORLD==1)
                 %ipaddress = '10.22.77.34';
-                ipaddress = '192.168.11.180';
-                %ipaddress = '10.16.30.15';
+                %ipaddress = '192.168.11.180';
+                ipaddress = '10.16.30.15';
                 if (robotics.ros.internal.Global.isNodeActive==0)
                     world_mat.consolePrint(strcat('Initializing ROS node with master IP ....', ...
                         ipaddress));
                     rosinit(ipaddress)
                 end
                 START_TIME = rostime('now');
+                GAZEBO_SIM = true;
                 world_gaz = WorldBuilder_Gazebo();
                 world_mat.setGazeboBuilder(world_gaz);
                 list = getSpawnedModels(world_gaz);
@@ -147,6 +149,10 @@ classdef WorldBuilder_MATLAB < handle
                     position = kobuki.getState();
                     world_mat.wayPoints = [position(1:2); ...
                         world_mat.wayPoints];
+                else
+                    position = kobuki.getState();
+                    world_mat.wayPoints = [position(1:2); ...
+                        2 2; -2 -2; 2 -2; -2 2];
                 end
                 
                 if (~isempty(world_mat.wayPoints))
@@ -156,8 +162,16 @@ classdef WorldBuilder_MATLAB < handle
                 % seconds (odometry)
                 %kobuki.odometryListener.setCallbackRate('fastest');
                 kobuki.odometryListener.setCallbackRate(0.1, world_mat.tfmgr);
-                kobuki.laserScanListener.setCallbackRate(0.4, world_mat.tfmgr);
+                kobuki.laserScanListener.setCallbackRate(0.5, world_mat.tfmgr);
                 kobuki.rgbCamListener.setCallbackRate(4, world_mat.tfmgr);
+                % reassign the velocity controller
+                %kobuki.velocityController = LaserScanAvoidController();
+                kobuki.velocityController = PurePursuitController_Student(world_gaz);
+
+                if (isa(kobuki.velocityController,'PurePursuitController_Student'))
+                    disp('Sending waypoints to pure pursuit controller.');
+                    kobuki.velocityController.setWaypoints(world_mat.wayPoints);
+                end
                 kobuki.velocityController.setCallbackRate(0.1, world_mat.tfmgr);
             end            
         end

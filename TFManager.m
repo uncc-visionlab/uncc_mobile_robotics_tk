@@ -61,6 +61,7 @@ classdef TFManager < handle
                 for tfidx=1:obj.numTfMsgs
                     send(obj.tfpub, obj.tfmsgArray{tfidx});
                 end
+                %disp('Published tfmgr transforms');
             end
             
         end
