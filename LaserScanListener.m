@@ -38,11 +38,10 @@ classdef LaserScanListener < handle
                 delete(linehandle);
             end
             figure(1);
-            linehandle = plot(xVals,yVals,'.','MarkerSize',12);
+            linehandle = plot(xVals,yVals,'.','MarkerSize',5);
             
             duration = rostime('now')-START_TIME;
             duration_secs = duration.Sec+duration.Nsec*10^-9;
-            figure(1);
             %uicontrol('Style', 'text', ...
             %    'String', datestr(timeStruct.Data.time), ...
             %    'Units','normalized', ...
@@ -72,6 +71,8 @@ classdef LaserScanListener < handle
         end
         
         function laserScanCallback(obj, varargin)
+            global START_TIME;
+            
             if (isa(varargin{1},'timer')==1)
                 laserScanMessage = varargin{3}.LatestMessage;
                 tfmgr = varargin{4};
@@ -79,15 +80,31 @@ classdef LaserScanListener < handle
                 laserScanMessage = varargin{1}.LatestMessage;
                 tfmgr = varargin{2};
             end
-            if (tfmgr.tftree.canTransform('map', 'base_link'))
-                tfmgr.tftree.waitForTransform('map', 'base_link');
+            if (tfmgr.tftree.canTransform('map', 'base_link')==1)
+                tfmgr.tftree.waitForTransform('map', 'base_link')
                 map2basetf = tfmgr.tftree.getTransform('map', 'base_link');%, ...
-                    %rostime('now') - rosduration(0.2), 'Timeout', 2);
-                tVal = map2basetf.Transform.Translation;
-                qVal = map2basetf.Transform.Rotation;
-                pose = LocalPose([tVal.X tVal.Y tVal.Z], ...
-                    [qVal.W qVal.X qVal.Y qVal.Z]);
-                LaserScanListener.plotScan(laserScanMessage, pose);
+                scanTime = laserScanMessage.Header.Stamp.Sec+laserScanMessage.Header.Stamp.Nsec*10^-9;
+                tfTime = map2basetf.Header.Stamp.Sec+map2basetf.Header.Stamp.Nsec*10^-9;
+                %rostime('now') - rosduration(0.2), 'Timeout', 2);
+                %currentTime = rostime('now');
+                %time_diff = currentTime.Sec - scanTime.Sec
+                %if (currentTime.Sec - scanTime.Sec > 10)
+                %    disp('Discrepancy in header time.');
+                %    return;
+                %end
+                %map2basetf = tfmgr.tftree.getTransform('map', 'base_link', ...
+                %    laserScanMessage.Header.Stamp, 'Timeout', 2)
+                time_diff = abs(scanTime-tfTime);
+                if (time_diff < 0.1)
+                    tVal = map2basetf.Transform.Translation;
+                    qVal = map2basetf.Transform.Rotation;
+                    pose = LocalPose([tVal.X tVal.Y tVal.Z], ...
+                        [qVal.W qVal.X qVal.Y qVal.Z]);
+                    LaserScanListener.plotScan(laserScanMessage, pose);
+                else
+                    %disp('LaserScanListener could not get up-to-date map->base_link transform');
+                end
+                
             else
                 disp('LaserScanListener could not get map->base_link transform');
             end

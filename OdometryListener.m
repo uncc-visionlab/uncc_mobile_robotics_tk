@@ -14,6 +14,8 @@
 %    Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 classdef OdometryListener < handle
     properties
+        % provides ground truth odometry via the getState() function
+        % e.g. Gazebo provides this function during simulation
         stateProvider
         
         odometrySub
@@ -23,9 +25,6 @@ classdef OdometryListener < handle
         odom_qorientation = [1 0 0 0]; % quaternion is of the form q = [w x y z]
         odom_tform
         odom_stateRenderer
-        
-        initial_position = [0 0 0];
-        initial_qorientation = [1 0 0 0];
         
         actual_position = [0 0 0];
         actual_qorientation = [1 0 0 0]; % quaternion is of the form q = [w x y z]
@@ -57,7 +56,7 @@ classdef OdometryListener < handle
                     {@obj.odometryCallback, tfmgr};
             else
                 obj.odometryTimer = timer('TimerFcn', ...
-                    {@obj.odometryCallback,obj.odometrySub, tfmgr}, ...
+                    {@obj.odometryCallback, obj.odometrySub, tfmgr}, ...
                     'Period',rate,'ExecutionMode','fixedSpacing');
                 pause(2);
                 start(obj.odometryTimer);
@@ -65,6 +64,7 @@ classdef OdometryListener < handle
         end
         
         function odometryCallback(obj, varargin)
+            global GAZEBO_SIM;
             persistent time_prev;
             
             if (isa(varargin{1},'timer')==1)
@@ -84,34 +84,32 @@ classdef OdometryListener < handle
             %poseCovariance = reshape(message.Pose.Covariance,6,6);
             %twist = message.Twist.Twist; % Linear (Vector3) Angular (Vector3)
             %twistCovariance = reshape(message.Twist.Covariance,6,6);
-            [position, orientation, velocity] = obj.stateProvider.getState();
-            obj.actual_qorientation = eul2quat(orientation*pi/180,'ZYX');
-            obj.actual_position = position;
-            obj.actual_tform = obj.tfTransform(obj.actual_tform, ...
-                obj.actual_position,obj.actual_qorientation);
-            obj.actual_tform.Header.Stamp = rostime('now');            
-            tfmgr.tftree.sendTransform(obj.actual_tform);
-            obj.actual_stateRenderer.showState(obj.actual_position,obj.actual_qorientation)
+            if (GAZEBO_SIM==true)
+                [position, orientation, velocity] = obj.stateProvider.getState();
+                obj.actual_qorientation = eul2quat(orientation*pi/180,'ZYX');
+                obj.actual_position = position;
+                obj.actual_tform = obj.tfTransform(obj.actual_tform, ...
+                    obj.actual_position,obj.actual_qorientation);
+                obj.actual_tform.Header.Stamp = rostime('now');
+                tfmgr.tftree.sendTransform(obj.actual_tform);
+                obj.actual_stateRenderer.showState(obj.actual_position,obj.actual_qorientation)
+            end
+            
             if (isempty(time_prev)==0)
                 %delta_t = time_cur - time_prev;
-                estimated_position = obj.initial_position + obj.odom_position;
-                %estimated_qorientation = quatmultiply(obj.initial_qorientation,obj.odom_qorientation);
-                rotM=quat2rotm(obj.odom_qorientation)*quat2rotm(obj.initial_qorientation);
-                estimated_qorientation = rotm2quat(rotM);
                 obj.odom_tform = obj.tfTransform(obj.odom_tform, ...
-                    estimated_position,estimated_qorientation);
-                obj.odom_tform.Header.Stamp = rostime('now');            
+                    obj.odom_position, obj.odom_qorientation);
+                obj.odom_tform.Header.Stamp = message.Header.Stamp;            
                 %disp('OdomPropagation published odom->base_link transform to tf');
                 tfmgr.tftree.sendTransform(obj.odom_tform);
-                obj.odom_stateRenderer.showState(estimated_position,estimated_qorientation);
-            else
+                obj.odom_stateRenderer.showState(obj.odom_position, ...
+                    obj.odom_qorientation);
+            elseif (GAZEBO_SIM==true)
                 %delta_t = 0;
                 % initialize actual = odom on first function call
                 disp('Initializing odom position and orientation to ground truth values.');
                 tfmgr.setMessage(1,'map', 'odom', obj.actual_position, ...
                     obj.actual_qorientation);
-                %obj.initial_position = obj.actual_position;
-                %obj.initial_qorientation = obj.actual_qorientation;
             end
             time_prev = time_cur;
         end

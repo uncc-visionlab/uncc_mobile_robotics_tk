@@ -30,7 +30,9 @@ classdef Kobuki < ExampleHelperGazeboSpawnedModel
 
             obj.laserScanListener = LaserScanListener();
             obj.rgbCamListener = RGBCameraListener();
+            %obj.odometryListener = OdometryPathRecorder(obj);
             obj.odometryListener = OdometryListener(obj);
+            %obj.velocityController = PurePursuitController(obj);
             obj.velocityController = LaserScanAvoidController();
         end
                         
