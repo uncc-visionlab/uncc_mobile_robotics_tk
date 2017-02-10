@@ -104,15 +104,15 @@ classdef PurePursuitController_Student < OdometryListener
             currentPos = pose.position(1:2)';
             rpy=PurePursuitController_Student.quat2rpy(pose.qorientation);
             yawAngle = rpy(3);
+            if (obj.goalPtIdx==0)
+                return;
+            end
             if (norm(obj.wayPoints(obj.goalPtIdx,:)'-currentPos) < obj.goalRadius)
                 if (obj.goalPtIdx < obj.numWayPoints)
                     obj.goalPtIdx = obj.goalPtIdx + 1;
                 else
                     obj.goalPtIdx = 0;
                 end
-            end
-            if (obj.goalPtIdx==0)
-                return;
             end
             
             goalPt = obj.findGoalPoint(currentPos);
