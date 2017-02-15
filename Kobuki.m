@@ -33,7 +33,8 @@ classdef Kobuki < ExampleHelperGazeboSpawnedModel
             %obj.odometryListener = OdometryPathRecorder(obj);
             obj.odometryListener = OdometryListener(obj);
             %obj.velocityController = PurePursuitController(obj);
-            obj.velocityController = LaserScanAvoidController();
+            %obj.velocityController = LaserScanAvoidController();
+            obj.velocityController = PurePursuitController_Student(obj);
         end
                         
         function sendVelocityCommand(kobuki, velocityMsg)

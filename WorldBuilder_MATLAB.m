@@ -64,10 +64,12 @@ classdef WorldBuilder_MATLAB < handle
             if (world_mat.BUILD_GAZEBO_WORLD==1)
                 %ipaddress = '10.22.77.34';
                 %ipaddress = '192.168.11.180';
-                ipaddress = '10.16.30.15';
+                ipaddress = '10.16.30.14';
                 if (robotics.ros.internal.Global.isNodeActive==0)
                     world_mat.consolePrint(strcat('Initializing ROS node with master IP ....', ...
                         ipaddress));
+                    % REPLACE THIS IP WITH YOUR COMPUTER / HOST IP
+                    %rosinit(ipaddress,'NodeHost','10.38.48.111')
                     rosinit(ipaddress)
                 end
                 START_TIME = rostime('now');
@@ -166,7 +168,7 @@ classdef WorldBuilder_MATLAB < handle
                 kobuki.rgbCamListener.setCallbackRate(4, world_mat.tfmgr);
                 % reassign the velocity controller
                 %kobuki.velocityController = LaserScanAvoidController();
-                kobuki.velocityController = PurePursuitController_Student(world_gaz);
+                %kobuki.velocityController = PurePursuitController_Student(world_gaz);
 
                 if (isa(kobuki.velocityController,'PurePursuitController_Student'))
                     disp('Sending waypoints to pure pursuit controller.');
