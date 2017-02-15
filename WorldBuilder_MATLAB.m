@@ -69,6 +69,12 @@ classdef WorldBuilder_MATLAB < handle
                     world_mat.consolePrint(strcat('Initializing ROS node with master IP ....', ...
                         ipaddress));
                     % REPLACE THIS IP WITH YOUR COMPUTER / HOST IP
+                    % You can get your host IP by opening the "cmd" program
+                    % (from the "run" dialog) and typing "ipconfig" into the 
+                    % command prompt. Review the console output and find the
+                    % "IPv4 Address" of your network card. These values 
+                    % should be substituted into the ip address of the 
+                    % command below.
                     %rosinit(ipaddress,'NodeHost','10.38.48.111')
                     rosinit(ipaddress)
                 end
