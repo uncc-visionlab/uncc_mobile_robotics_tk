@@ -75,7 +75,7 @@ classdef WorldBuilder_MATLAB < handle
                     % "IPv4 Address" of your network card. These values 
                     % should be substituted into the ip address of the 
                     % command below.
-                    rosinit(ipaddress,'NodeHost','10.38.48.111')
+                    rosinit(ipaddress,'NodeHost','10.38.48.111');
                     %rosinit(ipaddress)
                 end
                 START_TIME = rostime('now');
