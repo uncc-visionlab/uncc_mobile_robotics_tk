@@ -13,12 +13,21 @@
 %    along with this program; if not, write to the Free Software Foundation,
 %    Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 classdef Kobuki < ExampleHelperGazeboSpawnedModel
+    % Kobuki This class handles the kobuki/turtlebot as an object. It can
+    % be used to access the sensor suite of the robot and it holds
+    % references to all of the objects that it "contains." For example it
+    % holds references to it's camera, laser scan, and odometry subscriber
+    % objects which allows multiple turtlebots to be instantiated. Each 
+    % instance will hold unique references to their sensor suites reducing
+    % complexity of higher level code for multi-robot contexts.
+    
     properties
         world_gazebo
         
         laserScanListener
         rgbCamListener        
         odometryListener
+        odometryEKF
         
         velocityController
     end
@@ -30,10 +39,11 @@ classdef Kobuki < ExampleHelperGazeboSpawnedModel
 
             obj.laserScanListener = LaserScanListener();
             obj.rgbCamListener = RGBCameraListener();
-            %obj.odometryListener = OdometryPathRecorder(obj);
-            obj.odometryListener = OdometryListener(obj);
-            %obj.velocityController = PurePursuitController(obj);
+            obj.odometryListener = OdometryPathRecorder(obj);
+            %obj.odometryListener = OdometryListener(obj);
             %obj.velocityController = LaserScanAvoidController();
+            %obj.velocityController = PurePursuitController(obj);
+            %obj.odometryEKF = OdomEstimationNode(true, false, false, false);
             obj.velocityController = PurePursuitController_Student(obj);
         end
                         

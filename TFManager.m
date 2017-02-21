@@ -13,10 +13,14 @@
 %    along with this program; if not, write to the Free Software Foundation,
 %    Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 classdef TFManager < handle
-    %UNTITLED Summary of this class goes here
-    %   Detailed explanation goes here
+    % TFManager This class handles the tf aspects of the MATLAB <---> ROS
+    % communication and includes several helper functions for making TF
+    % messages, e.g., tf::Transform and tf::TransformStamped. It is also
+    % responsible for publishing static, i.e., constant transforms to the
+    % tf server for nodes to access.
     
     properties
+        MAX_NUM_STATIC_TRANSFORMS=10
         tfpub
         % Create a timer for publishing tf messages
         tfpubtimer
@@ -24,6 +28,46 @@ classdef TFManager < handle
         tfmsgArray
         numTfMsgs
     end
+    
+    methods (Static)
+        function xform = makeTransform(position, qorientation)
+            % create a tf::Transform message from a position and quaternion
+            % orientation values
+            xform = rosmessage('geometry_msgs/Transform');
+            TFManager.populateTransform(xform, position, qorientation);
+        end
+        
+        function xform = populateTransform(xform, position, qorientation)
+            % populate a tf::Transform message (tfxform) from 
+            % position and quaternion orientation values
+            xform.Translation.X = position(1);
+            xform.Translation.Y = position(2);
+            xform.Translation.Z = position(3);
+            xform.Rotation.W = qorientation(1);
+            xform.Rotation.X = qorientation(2);
+            xform.Rotation.Y = qorientation(3);
+            xform.Rotation.Z = qorientation(4);
+        end
+        
+        function tfxform_stamp = makeTransformStamped(position, qorientation, rostimeVal)
+            % create a tf::Transform message from a position and quaternion
+            % orientation values
+            tfxform_stamp = rosmessage('geometry_msgs/TransformStamped');
+            TFManager.populateTransformStamped(tfxform, position, qorientation, ...
+                rostimeVal);
+        end
+        
+        function tfxform_stamp = populateTransformStamped(tfxform_stamp, ...
+                position, qorientation, rostimeVal)
+            % populate a tf::TransformStamped message (tfxform) from 
+            % position and quaternion orientation values
+            % having timestamp rostimeVal
+            tfxform_stamp.Header.Stamp = rostimeVal;
+            tfxform_stamp.Transform = TFManager.populateTransform(...
+                tfxform_stamp.Transform, position, qorientation);
+        end        
+    end
+    
     methods
         function obj = TFManager()
             obj.tfpub = rospublisher('/tf', 'tf2_msgs/TFMessage');            
@@ -33,19 +77,17 @@ classdef TFManager < handle
             obj.tftree.BufferTime = 15;
             %frames = obj.tftree.AvailableFrames()
             %updateTime = obj.tftree.LastUpdateTime
-            for idx=1:10
+            for idx=1:obj.MAX_NUM_STATIC_TRANSFORMS
                 obj.tfmsgArray{idx}=obj.mynewTF2Message('','',[0 0 0], [1 0 0 0]);
             end            
             obj.setMessage(1,'map', 'odom', [0 0 0], [1 0 0 0]);
             obj.setMessage(2,'map', 'odom_truth', [0 0 0], [1 0 0 0]);
             obj.numTfMsgs=2;
-            obj.tfpubtimer = ExampleHelperROSTimer(0.05, {@obj.myROSTfPubTimer, obj.tfpub});            
+            obj.tfpubtimer = ExampleHelperROSTimer(0.05, {@obj.ROSTfPubTimer});            
             pause(1);
         end
         
-        
-        function myROSTfPubTimer(obj, ~, ~, tfpub)
-            
+        function ROSTfPubTimer(obj, ~, ~)            
             % Set current time stamp
             % Only do this, if the global node is active. Otherwise, calls to rostime
             % might fail.
@@ -85,20 +127,12 @@ classdef TFManager < handle
             if robotics.ros.internal.Global.isNodeActive
                 tfStampedMsg.Header.Stamp = rostime('now');
             end
-            
-            tfStampedMsg.Transform.Translation.X = translation(1);
-            tfStampedMsg.Transform.Translation.Y = translation(2);
-            tfStampedMsg.Transform.Translation.Z = translation(3);
-            
-            tfStampedMsg.Transform.Rotation.W = rotation(1);
-            tfStampedMsg.Transform.Rotation.X = rotation(2);
-            tfStampedMsg.Transform.Rotation.Y = rotation(3);
-            tfStampedMsg.Transform.Rotation.Z = rotation(4);
+            tfStampedMsg.Transform = TFManager.populateTransform(tfStampedMsg.Transform, ...
+                translation, rotation);
         end
         
         function setMessage(obj, tfidx, targetFrame, sourceFrame, translation, rotation)
-            %newTransformStamped Create a new geometry_msgs/TransformStamped message
-            
+            %newTransformStamped Create a new geometry_msgs/TransformStamped message            
             tf2Msg = obj.tfmsgArray{tfidx};
             tfStampedMsg = tf2Msg.Transforms;
             tfStampedMsg.ChildFrameId = sourceFrame;
@@ -106,15 +140,8 @@ classdef TFManager < handle
             if robotics.ros.internal.Global.isNodeActive
                 tfStampedMsg.Header.Stamp = rostime('now');
             end
-            
-            tfStampedMsg.Transform.Translation.X = translation(1);
-            tfStampedMsg.Transform.Translation.Y = translation(2);
-            tfStampedMsg.Transform.Translation.Z = translation(3);
-            
-            tfStampedMsg.Transform.Rotation.W = rotation(1);
-            tfStampedMsg.Transform.Rotation.X = rotation(2);
-            tfStampedMsg.Transform.Rotation.Y = rotation(3);
-            tfStampedMsg.Transform.Rotation.Z = rotation(4);
+            tfStampedMsg.Transform = TFManager.populateTransform(tfStampedMsg.Transform, ...
+                translation, rotation);
         end
         
     end

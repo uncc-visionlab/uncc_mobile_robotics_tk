@@ -21,7 +21,7 @@ classdef RGBCameraListener < handle
     
     methods (Static)
         function showRGBImage(img, pose)
-            global START_TIME;
+            global START_TIME GUI;
             
             numpixels=length(img.Data);
             r=img.Data(1:3:numpixels);
@@ -31,12 +31,14 @@ classdef RGBCameraListener < handle
             g=reshape(g,img.Width,img.Height)';
             b=reshape(b,img.Width,img.Height)';
             imgRGB=cat(3,r,g,b);
-            figure(2);
+            %figure(2);
+            GUI.setFigure('IMAGE')
             imshow(imgRGB);
 
             duration = rostime('now')-START_TIME;
             duration_secs = duration.Sec+duration.Nsec*10^-9;
-            figure(2);
+            %figure(2);
+            GUI.setFigure('IMAGE')
             xlabelstr = sprintf('Image timestamp: %0.3f',duration_secs);
             xlabel(xlabelstr);
         end

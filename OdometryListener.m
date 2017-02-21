@@ -40,12 +40,14 @@ classdef OdometryListener < handle
             obj.odom_tform = rosmessage('geometry_msgs/TransformStamped');
             obj.odom_tform.ChildFrameId = 'base_link';
             obj.odom_tform.Header.FrameId = 'odom';
-            obj.odom_stateRenderer = StateRenderer();
+
+            obj.odom_stateRenderer = StateRenderer(); % draws odometry state estimate
 
             obj.actual_tform = rosmessage('geometry_msgs/TransformStamped');
             obj.actual_tform.ChildFrameId = 'base_link_truth';
             obj.actual_tform.Header.FrameId = 'odom_truth';
-            obj.actual_stateRenderer = StateRenderer();
+
+            obj.actual_stateRenderer = StateRenderer(); % draws ground truth state
             obj.actual_stateRenderer.body_color = [0.4 0.4 0.4];
             obj.actual_stateRenderer.arrow_color = [0.6 0.6 0.6];
         end
@@ -74,12 +76,26 @@ classdef OdometryListener < handle
                 message = varargin{1}.LatestMessage;
                 tfmgr = varargin{2};
             end
-            time_cur = rostime(message.Header.Stamp.Sec,message.Header.Stamp.Nsec);
+            
+            %time_cur = rostime(message.Header.Stamp.Sec,message.Header.Stamp.Nsec);
+            time_cur = message.Header.Stamp;
+            
             odom_pos = message.Pose.Pose.Position; % .Position (point) Orientation (quat)
             obj.odom_position = [odom_pos.X odom_pos.Y odom_pos.Z];
             odom_qorient = message.Pose.Pose.Orientation;
             obj.odom_qorientation = [odom_qorient.W, odom_qorient.X, ...
                 odom_qorient.Y, odom_qorient.Z];
+            if (1==0) % add noise
+                mu = zeros(6,1);
+                sigma = eye(6);
+                sigma(1:3,1:3) = 0.01*sigma(1:3,1:3);
+                sigma(4:6,4:6) = (2*pi/180)*sigma(1:3,1:3);
+                mvn_sample = mvnrnd(mu,sigma);
+                position_noise = mvn_sample(1:3);
+                qorientation_noise = eul2quat(mvn_sample(4:6)*pi/180,'ZYX');
+                obj.odom_position = obj.odom_position + position_noise;
+                obj.odom_qorientation = obj.odom_qorientation + qorientation_noise;
+            end
             %pose = message.Pose.Pose; % .Position (point) Orientation (quat)
             %poseCovariance = reshape(message.Pose.Covariance,6,6);
             %twist = message.Twist.Twist; % Linear (Vector3) Angular (Vector3)
@@ -88,18 +104,20 @@ classdef OdometryListener < handle
                 [position, orientation, velocity] = obj.stateProvider.getState();
                 obj.actual_qorientation = eul2quat(orientation*pi/180,'ZYX');
                 obj.actual_position = position;
-                obj.actual_tform = obj.tfTransform(obj.actual_tform, ...
-                    obj.actual_position,obj.actual_qorientation);
-                obj.actual_tform.Header.Stamp = rostime('now');
+                obj.actual_tform = TFManager.populateTransformStamped( ...
+                    obj.actual_tform, ...
+                    obj.actual_position, obj.actual_qorientation, ...
+                    rostime('now'));                    
                 tfmgr.tftree.sendTransform(obj.actual_tform);
-                obj.actual_stateRenderer.showState(obj.actual_position,obj.actual_qorientation)
+                obj.actual_stateRenderer.showState(obj.actual_position, ...
+                    obj.actual_qorientation)
             end
             
             if (isempty(time_prev)==0)
                 %delta_t = time_cur - time_prev;
-                obj.odom_tform = obj.tfTransform(obj.odom_tform, ...
-                    obj.odom_position, obj.odom_qorientation);
-                obj.odom_tform.Header.Stamp = message.Header.Stamp;            
+                obj.odom_tform = TFManager.populateTransformStamped( ...
+                    obj.odom_tform, obj.odom_position, ...
+                    obj.odom_qorientation, message.Header.Stamp);                    
                 %disp('OdomPropagation published odom->base_link transform to tf');
                 tfmgr.tftree.sendTransform(obj.odom_tform);
                 obj.odom_stateRenderer.showState(obj.odom_position, ...
@@ -112,16 +130,6 @@ classdef OdometryListener < handle
                     obj.actual_qorientation);
             end
             time_prev = time_cur;
-        end
-        
-        function tform = tfTransform(~, tform, position, qorientation)
-            tform.Transform.Translation.X = position(1);
-            tform.Transform.Translation.Y = position(2);
-            tform.Transform.Translation.Z = position(3);
-            tform.Transform.Rotation.W = qorientation(1);
-            tform.Transform.Rotation.X = qorientation(2);
-            tform.Transform.Rotation.Y = qorientation(3);
-            tform.Transform.Rotation.Z = qorientation(4);
         end
     end
 end

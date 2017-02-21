@@ -51,6 +51,8 @@ classdef StateRenderer < handle
         end
         
         function showState(obj, position, qorientation)
+            global GUI;
+            
             if (isempty(obj.basehandle)==0)
                 % remove previous scan robot plot
                 delete(obj.basehandle);
@@ -60,7 +62,8 @@ classdef StateRenderer < handle
                 delete(obj.arrowhandle);
             end
             localpose = LocalPose(position,qorientation);
-            figure(1);
+            %figure(1);
+            GUI.setFigure('MAP');
             [ox, oy] = localpose.transform(obj.boundaryPolyPoints(1,:), ...
                 obj.boundaryPolyPoints(2,:));
             obj.basehandle = plot(ox,oy,'Color',obj.body_color);

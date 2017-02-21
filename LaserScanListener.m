@@ -22,6 +22,7 @@ classdef LaserScanListener < handle
     methods (Static)
         function plotScan(laserScanMessage, pose)
             global START_TIME;
+            global GUI;
             
             persistent linehandle;
             ranges = laserScanMessage.Ranges';
@@ -37,9 +38,9 @@ classdef LaserScanListener < handle
                 % remove previous scan plot
                 delete(linehandle);
             end
-            figure(1);
-            linehandle = plot(xVals,yVals,'.','MarkerSize',5);
-            
+            %figure(1);
+            GUI.setFigure('MAP');
+            linehandle = plot(xVals,yVals,'.','MarkerSize',5);            
             duration = rostime('now')-START_TIME;
             duration_secs = duration.Sec+duration.Nsec*10^-9;
             %uicontrol('Style', 'text', ...
@@ -70,9 +71,7 @@ classdef LaserScanListener < handle
             end
         end
         
-        function laserScanCallback(obj, varargin)
-            global START_TIME;
-            
+        function laserScanCallback(obj, varargin)            
             if (isa(varargin{1},'timer')==1)
                 laserScanMessage = varargin{3}.LatestMessage;
                 tfmgr = varargin{4};

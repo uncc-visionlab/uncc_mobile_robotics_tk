@@ -106,7 +106,7 @@ classdef PurePursuitController_Student < OdometryListener
             yawAngle = rpy(3);
             if (obj.goalPtIdx==0)
                 return;
-            end
+            end            
             if (norm(obj.wayPoints(obj.goalPtIdx,:)'-currentPos) < obj.goalRadius)
                 if (obj.goalPtIdx < obj.numWayPoints)
                     obj.goalPtIdx = obj.goalPtIdx + 1;
@@ -129,6 +129,7 @@ classdef PurePursuitController_Student < OdometryListener
         end
         
         function goalPt = findGoalPoint(obj, queryPt)
+            global GUI;
             persistent tris_startend tri_goal;
             
             endPt = obj.wayPoints(obj.goalPtIdx,:)';
@@ -146,7 +147,8 @@ classdef PurePursuitController_Student < OdometryListener
                     delete(tris_startend);
                     delete(tri_goal);
                 end
-                figure(1);
+                %figure(1);
+                GUI.setFigure('MAP');
                 polyPts=[startPt queryPt closestPt startPt queryPt endPt closestPt];
                 tris_startend = plot(polyPts(1,:),polyPts(2,:),'b-');
                 polyPts=[closestPt queryPt goalPt];

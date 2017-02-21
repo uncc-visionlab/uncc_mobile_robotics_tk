@@ -52,31 +52,31 @@ classdef WorldBuilder_MATLAB < handle
             global START_TIME;
             global GAZEBO_SIM;
             
-            rosshutdown;
             world_mat.consolePrint('Shutting down any active ROS processes....');
+            rosshutdown;
             pause(1);
             
             GAZEBO_SIM = false;
             WORLD_MAP_INDEX=1;
-            world_mat.BUILD_GAZEBO_WORLD=1;
+            world_mat.BUILD_GAZEBO_WORLD=true;
             ACTIVATE_KOBUKI=1;
-                        
-            if (world_mat.BUILD_GAZEBO_WORLD==1)
+            
+            if (world_mat.BUILD_GAZEBO_WORLD)
                 %ipaddress = '10.22.77.34';
-                %ipaddress = '192.168.11.180';
-                ipaddress = '10.16.30.14';
+                ipaddress = '192.168.11.178';
+                %ipaddress = '10.16.30.14';
                 if (robotics.ros.internal.Global.isNodeActive==0)
                     world_mat.consolePrint(strcat('Initializing ROS node with master IP ....', ...
                         ipaddress));
                     % REPLACE THIS IP WITH YOUR COMPUTER / HOST IP
                     % You can get your host IP by opening the "cmd" program
-                    % (from the "run" dialog) and typing "ipconfig" into the 
+                    % (from the "run" dialog) and typing "ipconfig" into the
                     % command prompt. Review the console output and find the
-                    % "IPv4 Address" of your network card. These values 
-                    % should be substituted into the ip address of the 
+                    % "IPv4 Address" of your network card. These values
+                    % should be substituted into the ip address of the
                     % command below.
-                    rosinit(ipaddress,'NodeHost','10.38.48.111');
-                    %rosinit(ipaddress)
+                    %rosinit(ipaddress,'NodeHost','10.38.48.111');
+                    rosinit(ipaddress)
                 end
                 START_TIME = rostime('now');
                 GAZEBO_SIM = true;
@@ -84,16 +84,52 @@ classdef WorldBuilder_MATLAB < handle
                 world_mat.setGazeboBuilder(world_gaz);
                 list = getSpawnedModels(world_gaz);
                 if (ismember('grey_wall',list))
-                    world_mat.BUILD_GAZEBO_WORLD=0;
+                    world_mat.BUILD_GAZEBO_WORLD=false;
                 end
-                world_mat.consolePrint('Initializing a ROS TF Transform Tree....');
-                world_mat.tfmgr = TFManager();
                 %world_gaz.removeAllTemporaryModels();
-            end                        
+            end
             
+            world_mat.makeMap(WORLD_MAP_INDEX);
+            bwImg = world_mat.mapToBWImage(455,245,[10; 10]);
+            %figure(2), imshow(bwImg);
+        end
+    end
+    
+    methods
+        function obj = WorldBuilder_MATLAB()
+            global GUI;
+            
+            obj.walldims=[7.5,0.2,2.8]';
+            obj.aabb=[-3.75 3.75 3.75 -3.75 -3.75;
+                0.1 0.1 -0.1 -0.1 0.1];
+            obj.numPolygons = 0;
+            obj.VERBOSE = 1;
+            % Create buttons in the GUI window
+            obj.randomLocationButton = uicontrol(GUI.getFigure('MAP'), ...
+                'Style', 'pushbutton', ...
+                'String','Start/Stop Sim.', ...
+                'Units', 'normalized', ...
+                'Position', [0.80 0.01 0.2 0.05], ...
+                'Callback', @obj.pauseSimulationButtonCallback);
+            
+            obj.resetSimulationButton = uicontrol(GUI.getFigure('MAP'), ...
+                'Style', 'pushbutton', ...
+                'String','Reset Simulation', ...
+                'Units', 'normalized', ...
+                'Position', [0.0 0.01 0.2 0.05], ...
+                'Callback', @obj.resetSimulationButtonCallback);
+        end
+        
+        function setGazeboBuilder(obj, gazbuilder)
+            obj.gazebo = gazbuilder;
+            obj.gazebo_wall_model = ExampleHelperGazeboModel('grey_wall','gazeboDB');
+        end
+        
+        
+        function makeMap(world_mat, map_index)
             dir_right=[1,0]';
             dir_up=[0,1]';
-            if (WORLD_MAP_INDEX==1)
+            if (map_index==1)
                 pstart=[-3.5,-3.5]';
                 pend=pstart+1*world_mat.walldims(1)*dir_right;
                 world_mat.makeWall(pstart, pend);
@@ -137,83 +173,12 @@ classdef WorldBuilder_MATLAB < handle
                 pstart=pend+[1.5*world_mat.walldims(1),0]';
                 pend=pstart+2*world_mat.walldims(1)*dir_up;
                 world_mat.makeWall(pstart, pend);
-                %image_frame=getframe(figure(1));
-                
-                bwImg = world_mat.mapToBWImage(455,245,[10; 10]);
-                figure(2), imshow(bwImg);
             end
-            
-            
-            if (ACTIVATE_KOBUKI==1)
-                kobuki = Kobuki(world_gaz);
-                world_mat.kobuki = kobuki;
-                
-                if (isempty(world_mat.wayPoints) && 1==0)
-                    pause(2);
-                    uiwait(msgbox({'Specify desired robot path', ...
-                        'with a sequence of waypoints using the mouse.', ...
-                        'Del (remove), Double-click when done'}, 'help'));
-                    world_mat.wayPoints = getline();
-                    position = kobuki.getState();
-                    world_mat.wayPoints = [position(1:2); ...
-                        world_mat.wayPoints];
-                else
-                    position = kobuki.getState();
-                    world_mat.wayPoints = [position(1:2); ...
-                        2 2; -2 -2; 2 -2; -2 2];
-                end
-                
-                if (~isempty(world_mat.wayPoints))
-                    path = world_mat.wayPoints
-                    figure(1), plot(path(:,1), path(:,2),'k--d');
-                end
-                % seconds (odometry)
-                %kobuki.odometryListener.setCallbackRate('fastest');
-                kobuki.odometryListener.setCallbackRate(0.1, world_mat.tfmgr);
-                kobuki.laserScanListener.setCallbackRate(0.5, world_mat.tfmgr);
-                kobuki.rgbCamListener.setCallbackRate(4, world_mat.tfmgr);
-                % reassign the velocity controller
-                %kobuki.velocityController = LaserScanAvoidController();
-                %kobuki.velocityController = PurePursuitController_Student(world_gaz);
-
-                if (isa(kobuki.velocityController,'PurePursuitController_Student'))
-                    disp('Sending waypoints to pure pursuit controller.');
-                    kobuki.velocityController.setWaypoints(world_mat.wayPoints);
-                end
-                kobuki.velocityController.setCallbackRate(0.1, world_mat.tfmgr);
-            end            
-        end
-    end
-    methods
-        function obj = WorldBuilder_MATLAB()
-            obj.walldims=[7.5,0.2,2.8]';
-            obj.aabb=[-3.75 3.75 3.75 -3.75 -3.75;
-                0.1 0.1 -0.1 -0.1 0.1];
-            obj.numPolygons = 0;
-            obj.VERBOSE = 1;
-            % Create buttons in the GUI window
-            obj.randomLocationButton = uicontrol(figure(1), ...
-                'Style', 'pushbutton', ...
-                'String','Randomize Location', ...
-                'Units', 'normalized', ...
-                'Position', [0.80 0.01 0.2 0.05], ...
-                'Callback', @obj.randomLocationButtonCallback);
-            
-            obj.resetSimulationButton = uicontrol(figure(1), ...
-                'Style', 'pushbutton', ...
-                'String','Reset Simulation', ...
-                'Units', 'normalized', ...
-                'Position', [0.0 0.01 0.2 0.05], ...
-                'Callback', @obj.resetSimulationButtonCallback);
-            
-        end
-        
-        function setGazeboBuilder(obj, gazbuilder)
-            obj.gazebo = gazbuilder;
-            obj.gazebo_wall_model = ExampleHelperGazeboModel('grey_wall','gazeboDB');
         end
         
         function makeWall(obj, pstart, pend)
+            global GUI;
+            
             dir = pend - pstart;
             dir = dir./norm(dir);
             theta = atan2(dir(2),dir(1));
@@ -225,11 +190,12 @@ classdef WorldBuilder_MATLAB < handle
                 bb=obj.aabb;
                 bb_prime = R_z*bb;
                 bb_prime = bb_prime+p_center*ones(1,5);
-                if (obj.BUILD_GAZEBO_WORLD==1)
+                if (obj.BUILD_GAZEBO_WORLD)
                     obj.gazebo.spawnModel(obj.gazebo_wall_model, ...
                         [p_center', 0],[0 0 theta]);
                 end
-                hold on, plot(bb_prime(1,:),bb_prime(2,:));
+                GUI.setFigure('MAP');
+                plot(bb_prime(1,:),bb_prime(2,:));
                 obj.polygonList.x(polygonIndex,:)=bb_prime(1,:);
                 obj.polygonList.y(polygonIndex,:)=bb_prime(2,:);
                 wall_len = wall_len + 7.5;
@@ -282,16 +248,31 @@ classdef WorldBuilder_MATLAB < handle
     end
     %% All GUI-related methods
     methods (Access = private)
-        function randomLocationButtonCallback(obj, ~, ~)
-            %randomLocationButtonCallback Callback when user presses "Randomize location" button
-            %randomizeLocation(obj);
-            disp('Random location');
+        function pauseSimulationButtonCallback(obj, ~, ~)
+            persistent state;
+            %pauseSimulationButtonCallback Callback when user presses "Randomize location" button
+            %pauseSimulation(obj);
+            % disp('Start/Stop simulation');
+            if (isempty(state)==1)
+                state=true;
+            end
+            state = ~state;
+            if (state==false)
+                obj.gazebo.pauseSim();
+            else
+                obj.gazebo.resumeSim();
+            end
         end
         
         function resetSimulationButtonCallback(obj, ~, ~)
             %resetSimulationButtonCallback Callback when user presses "Reset simulation" button
             %resetSimulation(obj);
-            disp('Reset sim');
+            % disp('Reset sim');
+            if (isempty(obj.kobuki)==0)
+                setState(obj.kobuki,'position',[0 0 0], ...
+                    'orientation', [0 0 0], ...
+                    'linvel',[0 0 0], 'angvel', [0 0 0]);
+            end
         end
-    end    
+    end
 end
