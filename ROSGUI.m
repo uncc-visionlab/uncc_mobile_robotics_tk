@@ -20,9 +20,9 @@ classdef ROSGUI < handle
             global START_TIME;
             global GAZEBO_SIM;
             global GUI;
-            addpath('./bfl/pdf');
-            addpath('./bfl/model');
-            addpath('./robot_pose_ekf');
+            %addpath('./bfl/pdf');
+            %addpath('./bfl/model');
+            %addpath('./robot_pose_ekf');
             
             WORLD_MAP_INDEX=1;
             BUILD_GAZEBO_WORLD=true;
@@ -51,8 +51,8 @@ classdef ROSGUI < handle
             
             if (BUILD_GAZEBO_WORLD)
                 %ipaddress = '10.22.77.34';
-                ipaddress = '192.168.11.178';
-                %ipaddress = '10.16.30.14';
+                %ipaddress = '192.168.11.178';
+                ipaddress = '10.16.30.8';
                 %ipaddress = GUI.ip_address;
                 if (robotics.ros.internal.Global.isNodeActive==0)
                     GUI.consolePrint(strcat(...
@@ -65,9 +65,11 @@ classdef ROSGUI < handle
                     % "IPv4 Address" of your network card. These values
                     % should be substituted into the ip address of the
                     % command below.
-                    %rosinit(ipaddress,'NodeHost','10.38.48.111');
-                    rosinit(ipaddress,'NodeHost',GUI.ip_address);
-                    %rosinit(ipaddress)
+                    if (ispc)
+                        rosinit(ipaddress,'NodeHost',GUI.ip_address);
+                    else
+                        rosinit(ipaddress)
+                    end
                 end
                 START_TIME = rostime('now');
                 GAZEBO_SIM = true;
@@ -115,7 +117,7 @@ classdef ROSGUI < handle
                 kobuki.odometryListener.setCallbackRate(0.1, world_mat.tfmgr);
                 kobuki.laserScanListener.setCallbackRate(0.5, world_mat.tfmgr);
                 kobuki.rgbCamListener.setCallbackRate(4, world_mat.tfmgr);
-                kobuki.odometryEKF.setTransformer(world_mat.tfmgr);
+                %kobuki.odometryEKF.setTransformer(world_mat.tfmgr);
                 
                 if (isa(kobuki.velocityController,'PurePursuitController_Student'))
                     disp('Sending waypoints to pure pursuit controller.');

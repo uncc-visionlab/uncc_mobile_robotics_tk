@@ -48,14 +48,18 @@ classdef WorldBuilder_MATLAB < handle
             clc;
             close all;
             hold off;
-            world_mat = WorldBuilder_MATLAB();
             global START_TIME;
             global GAZEBO_SIM;
-            
+            global GUI;
+            disp('Run the ROSGUI.demo function to run your code');
+            pause(10);
+            GUI = ROSGUI();
+            world_mat = WorldBuilder_MATLAB();
+
             world_mat.consolePrint('Shutting down any active ROS processes....');
             rosshutdown;
             pause(1);
-            
+
             GAZEBO_SIM = false;
             WORLD_MAP_INDEX=1;
             world_mat.BUILD_GAZEBO_WORLD=true;
@@ -63,8 +67,8 @@ classdef WorldBuilder_MATLAB < handle
             
             if (world_mat.BUILD_GAZEBO_WORLD)
                 %ipaddress = '10.22.77.34';
-                ipaddress = '192.168.11.178';
-                %ipaddress = '10.16.30.14';
+                %ipaddress = '192.168.11.178';
+                ipaddress = '10.16.30.8';
                 if (robotics.ros.internal.Global.isNodeActive==0)
                     world_mat.consolePrint(strcat('Initializing ROS node with master IP ....', ...
                         ipaddress));
@@ -75,7 +79,7 @@ classdef WorldBuilder_MATLAB < handle
                     % "IPv4 Address" of your network card. These values
                     % should be substituted into the ip address of the
                     % command below.
-                    %rosinit(ipaddress,'NodeHost','10.38.48.111');
+                    %rosinit(ipaddress,'NodeHost',GUI.ip_address);
                     rosinit(ipaddress)
                 end
                 START_TIME = rostime('now');
@@ -90,7 +94,7 @@ classdef WorldBuilder_MATLAB < handle
             end
             
             world_mat.makeMap(WORLD_MAP_INDEX);
-            bwImg = world_mat.mapToBWImage(455,245,[10; 10]);
+            %bwImg = world_mat.mapToBWImage(455,245,[10; 10]);
             %figure(2), imshow(bwImg);
         end
     end
