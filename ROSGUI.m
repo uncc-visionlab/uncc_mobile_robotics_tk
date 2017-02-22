@@ -9,6 +9,7 @@ classdef ROSGUI < handle
         ip_address
         figure_map
         figure_img
+        figure_error
         %figure_gui
     end
     methods (Static)
@@ -20,9 +21,9 @@ classdef ROSGUI < handle
             global START_TIME;
             global GAZEBO_SIM;
             global GUI;
-            %addpath('./bfl/pdf');
-            %addpath('./bfl/model');
-            %addpath('./robot_pose_ekf');
+            addpath('./bfl/pdf');
+            addpath('./bfl/model');
+            addpath('./robot_pose_ekf');
             
             WORLD_MAP_INDEX=1;
             BUILD_GAZEBO_WORLD=true;
@@ -46,13 +47,15 @@ classdef ROSGUI < handle
             
             h = GUI.getFigure('MAP');
             set(h,'Visible','on');
-            h = GUI.getFigure('IMAGE');
+            %h = GUI.getFigure('IMAGE');
+            %set(h,'Visible','on');
+            h = GUI.getFigure('ERROR');
             set(h,'Visible','on');
             
             if (BUILD_GAZEBO_WORLD)
                 %ipaddress = '10.22.77.34';
                 %ipaddress = '192.168.11.178';
-                ipaddress = '10.16.30.8';
+                ipaddress = '10.16.30.11';
                 %ipaddress = GUI.ip_address;
                 if (robotics.ros.internal.Global.isNodeActive==0)
                     GUI.consolePrint(strcat(...
@@ -116,7 +119,7 @@ classdef ROSGUI < handle
                 %kobuki.odometryListener.setCallbackRate('fastest');
                 kobuki.odometryListener.setCallbackRate(0.1, world_mat.tfmgr);
                 kobuki.laserScanListener.setCallbackRate(0.5, world_mat.tfmgr);
-                kobuki.rgbCamListener.setCallbackRate(4, world_mat.tfmgr);
+                %kobuki.rgbCamListener.setCallbackRate(4, world_mat.tfmgr);
                 %kobuki.odometryEKF.setTransformer(world_mat.tfmgr);
                 
                 if (isa(kobuki.velocityController,'PurePursuitController_Student'))
@@ -136,10 +139,17 @@ classdef ROSGUI < handle
     methods
         function rosgui = ROSGUI()
             rosgui.figure_map = figure(1);
+            title('MAP');
             hold on;
             set(rosgui.figure_map,'Visible','off');
             rosgui.figure_img = figure(2);
+            hold on;
+            title('IMAGE');
             set(rosgui.figure_img,'Visible','off');
+            rosgui.figure_error = figure(3);
+            hold on;
+            title('ERROR');
+            set(rosgui.figure_error,'Visible','off');
             rosgui.VERBOSE = true;
             if (ispc)
                 rosgui.host_os='Windows';
@@ -158,6 +168,8 @@ classdef ROSGUI < handle
                     set(0,'CurrentFigure',rosgui.figure_map);
                 case 'IMAGE'
                     set(0,'CurrentFigure',rosgui.figure_img);
+                case 'ERROR'
+                    set(0,'CurrentFigure',rosgui.figure_error);
                 otherwise
                     fprintf(1,'ROSGUI::setCurrentFigure() Could not set the figure to invalid string ''%s''\n', ...
                         figString);
@@ -170,6 +182,8 @@ classdef ROSGUI < handle
                     fig_h = rosgui.figure_map;
                 case 'IMAGE'
                     fig_h = rosgui.figure_img;
+                case 'ERROR'
+                    fig_h = rosgui.figure_error;
                 otherwise
                     fprintf(1,'ROSGUI::getFigure() Could not get the figure to invalid string ''%s''\n', ...
                         figString);
