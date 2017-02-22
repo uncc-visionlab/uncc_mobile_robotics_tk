@@ -21,9 +21,9 @@ classdef ROSGUI < handle
             global START_TIME;
             global GAZEBO_SIM;
             global GUI;
-            addpath('./bfl/pdf');
-            addpath('./bfl/model');
-            addpath('./robot_pose_ekf');
+            %addpath('./bfl/pdf');
+            %addpath('./bfl/model');
+            %addpath('./robot_pose_ekf');
             
             WORLD_MAP_INDEX=1;
             BUILD_GAZEBO_WORLD=true;
