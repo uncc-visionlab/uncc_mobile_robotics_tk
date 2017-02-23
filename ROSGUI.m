@@ -55,7 +55,7 @@ classdef ROSGUI < handle
             if (BUILD_GAZEBO_WORLD)
                 %ipaddress = '10.22.77.34';
                 %ipaddress = '192.168.11.178';
-                ipaddress = '10.16.30.11';
+                ipaddress = '10.22.71.32';
                 %ipaddress = GUI.ip_address;
                 if (robotics.ros.internal.Global.isNodeActive==0)
                     GUI.consolePrint(strcat(...
@@ -134,6 +134,10 @@ classdef ROSGUI < handle
                 end
             end
         end
+        function testIP
+            rgui = ROSGUI();
+            fprintf(1,'Your IP is : %s\n',rgui.ip_address);
+        end
     end
     
     methods
@@ -193,24 +197,33 @@ classdef ROSGUI < handle
         function ipAddrString = getIPAddress(rosgui)
             switch (rosgui.host_os)
                 case 'Windows'
+                    str_prefix = 'IPv4 Address.*?';
                     [~, stdout_str] = system('ipconfig');
                 case 'MacOSX'
+                    str_prefix = 'inet addr:';
                     [~, stdout_str] = system('ifconfig -a');
                 case 'Unix'
+                    str_prefix = 'inet addr:';
                     [~, stdout_str] = system('ifconfig -a');
                 otherwise
                     disp('No valid value for host os was found, cannot determine IP');
             end
-            ip_regex = strcat('((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.)){3}', ...
-                '(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)');
-            ipaddresses = regexp(stdout_str, ip_regex, 'match');
+            regex_first_triplet = '((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.)){3}';
+            regex_last_digits = '(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)';
+            ip_regex = strcat(str_prefix, regex_first_triplet, ...
+                regex_last_digits);
+            ip_regex2 = strcat(regex_first_triplet, ...
+                regex_last_digits);
+            ipaddress_strs = regexp(stdout_str, ip_regex, 'match');
+            ipaddresses = regexp(ipaddress_strs, ip_regex2, 'match');            
             ipAddrString = '';
             for sIdx=1:length(ipaddresses)
-                trimstr = strtrim(ipaddresses{sIdx});
+                trimstr = strtrim(ipaddresses{sIdx}{1});
                 if (~startsWith(trimstr,'127') && ...
                         ~startsWith(trimstr,'255') && ...
                         ~endsWith(trimstr,'255'))
                     ipAddrString = trimstr;
+                    return;
                 end
             end
         end
