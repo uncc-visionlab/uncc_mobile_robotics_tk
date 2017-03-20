@@ -1,0 +1,94 @@
+<?xml version="1.0"?>
+<sdf version="1.4">
+    <model name="landmark_001">
+        <link name="shaft">
+            <pose>0.0 0.0 0.2 0 0 0</pose>
+            <inertial>
+                <pose>0 0 0.0 0 0 0</pose>
+               <inertia>
+                    <ixx>1.0</ixx>
+                    <ixy>0</ixy>
+                    <ixz>0</ixz>
+                    <iyy>1.0</iyy>
+                    <iyz>0</iyz>
+                    <izz>1.0</izz>
+                </inertia>
+                <mass>1.0</mass>
+            </inertial>
+            <collision name="collision">
+                <geometry>
+                    <cylinder>
+                        <length>0.4</length>
+                        <radius>0.02</radius>
+                    </cylinder>
+                </geometry>
+            </collision>
+            <visual name="visual">
+		<cast_shadows>true</cast_shadows>
+                <geometry>
+                    <cylinder>
+                        <length>0.4</length>
+                        <radius>0.02</radius>
+                    </cylinder>
+                </geometry>
+                <material>
+		    <ambient>0.6 0.6 0.6 1</ambient>
+  		    <diffuse>0.6 0.6 0.6 1</diffuse>
+		    <specular>0.1 0.1 0.1 1</specular>
+  		    <emissive>0.0 0.0 0.0 0</emissive>
+                </material>
+            </visual>
+        </link>
+        <link name="ball">
+            <pose>0.0 0.0 0.425 0 0 0</pose>
+            <inertial>
+                <pose>0 0 0.0 0 0 0</pose>
+               <inertia>
+                    <ixx>1.0</ixx>
+                    <ixy>0</ixy>
+                    <ixz>0</ixz>
+                    <iyy>1.0</iyy>
+                    <iyz>0</iyz>
+                    <izz>1.0</izz>
+                </inertia>
+                <mass>1.0</mass>
+            </inertial>
+            <collision name="collision">
+                <geometry>
+                    <sphere>
+                        <radius>0.05</radius>
+                    </sphere>
+                </geometry>
+            </collision>
+            <visual name="visual">
+		<cast_shadows>true</cast_shadows>
+                <geometry>
+                    <sphere>
+                        <radius>0.05</radius>
+                    </sphere>
+                </geometry>
+                <material>
+		    <ambient>0.0 0.5 0.5 1</ambient>
+  		    <diffuse>0.0 0.5 0.5 1</diffuse>
+		    <specular>0.1 0.1 0.1 1</specular>
+  		    <emissive>0.2 0.2 0.2 0</emissive>
+                </material>
+            </visual>
+        </link>
+
+        <static>false</static>
+
+        <joint name="shaft_ball" type="revolute">
+            <pose>0 0 .4 0 0 0</pose>
+            <child>ball</child>
+            <parent>shaft</parent>
+            <axis>
+                <limit>
+                    <lower>0.0</lower>
+                    <upper>0.0</upper>
+                </limit>
+                <xyz>0 0 .42</xyz>
+            </axis>
+        </joint>
+    </model>
+</sdf>
