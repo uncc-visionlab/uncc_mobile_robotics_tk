@@ -53,7 +53,7 @@ classdef TFManager < handle
             % create a tf::Transform message from a position and quaternion
             % orientation values
             tfxform_stamp = rosmessage('geometry_msgs/TransformStamped');
-            TFManager.populateTransformStamped(tfxform, position, qorientation, ...
+            TFManager.populateTransformStamped(tfxform_stamp, position, qorientation, ...
                 rostimeVal);
         end
         
@@ -70,6 +70,7 @@ classdef TFManager < handle
     
     methods
         function obj = TFManager()
+            global GAZEBO_SIM;
             obj.tfpub = rospublisher('/tf', 'tf2_msgs/TFMessage');            
             % Create a timer for publishing tf messages
             obj.tftree = rostf;
@@ -79,10 +80,12 @@ classdef TFManager < handle
             %updateTime = obj.tftree.LastUpdateTime
             for idx=1:obj.MAX_NUM_STATIC_TRANSFORMS
                 obj.tfmsgArray{idx}=obj.mynewTF2Message('','',[0 0 0], [1 0 0 0]);
-            end            
-            obj.setMessage(1,'map', 'odom', [0 0 0], [1 0 0 0]);
-            obj.setMessage(2,'map', 'odom_truth', [0 0 0], [1 0 0 0]);
-            obj.numTfMsgs=2;
+            end
+            if (GAZEBO_SIM)
+                obj.setMessage(1,'map', 'odom', [0 0 0], [1 0 0 0]);
+                obj.setMessage(2,'map', 'odom_truth', [0 0 0], [1 0 0 0]);
+                obj.numTfMsgs=2;
+            end
             obj.tfpubtimer = ExampleHelperROSTimer(0.05, {@obj.ROSTfPubTimer});            
             pause(1);
         end

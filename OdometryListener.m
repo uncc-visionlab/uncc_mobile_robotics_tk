@@ -17,6 +17,7 @@ classdef OdometryListener < handle
         % provides ground truth odometry via the getState() function
         % e.g. Gazebo provides this function during simulation
         stateProvider
+        hasStateProvider
         
         odometrySub
         odometryTimer
@@ -30,11 +31,21 @@ classdef OdometryListener < handle
         actual_qorientation = [1 0 0 0]; % quaternion is of the form q = [w x y z]
         actual_tform
         actual_stateRenderer
+        
+        ADD_NOISE
+        noiseMean
+        noiseCovariance
     end
 
     methods
         function obj = OdometryListener(stateProvider)
-            obj.stateProvider = stateProvider;
+            if (isa(stateProvider,'KobukiSim'))
+                obj.stateProvider = stateProvider;
+                obj.hasStateProvider = true;
+            else
+                obj.hasStateProvider = false;
+            end
+            obj.ADD_NOISE = false;
             obj.odometrySub = rossubscriber('/odom','BufferSize',1);
             
             obj.odom_tform = rosmessage('geometry_msgs/TransformStamped');
@@ -65,6 +76,16 @@ classdef OdometryListener < handle
             end
         end
         
+        function setAddNoise(obj, value, mean, covariance)
+            obj.ADD_NOISE = value;
+            if (exist('mean','var'))
+                obj.noiseMean = mean;
+            end
+            if (exist('covariance','var'))
+                obj.noiseCovariance = covariance;
+            end
+        end
+        
         function odometryCallback(obj, varargin)
             global GAZEBO_SIM;
             persistent time_prev;
@@ -85,12 +106,8 @@ classdef OdometryListener < handle
             odom_qorient = message.Pose.Pose.Orientation;
             obj.odom_qorientation = [odom_qorient.W, odom_qorient.X, ...
                 odom_qorient.Y, odom_qorient.Z];
-            if (1==0) % add noise
-                mu = zeros(6,1);
-                sigma = eye(6);
-                sigma(1:3,1:3) = 0.01*sigma(1:3,1:3);
-                sigma(4:6,4:6) = (2*pi/180)*sigma(1:3,1:3);
-                mvn_sample = mvnrnd(mu,sigma);
+            if (obj.ADD_NOISE) % add noise
+                mvn_sample = mvnrnd(obj.noiseMean,obj.noiseCovariance);
                 position_noise = mvn_sample(1:3);
                 qorientation_noise = eul2quat(mvn_sample(4:6)*pi/180,'ZYX');
                 obj.odom_position = obj.odom_position + position_noise;
@@ -100,7 +117,7 @@ classdef OdometryListener < handle
             %poseCovariance = reshape(message.Pose.Covariance,6,6);
             %twist = message.Twist.Twist; % Linear (Vector3) Angular (Vector3)
             %twistCovariance = reshape(message.Twist.Covariance,6,6);
-            if (GAZEBO_SIM==true)
+            if (obj.hasStateProvider)
                 [position, orientation, velocity] = obj.stateProvider.getState();
                 obj.actual_qorientation = eul2quat(orientation*pi/180,'ZYX');
                 obj.actual_position = position;
@@ -122,7 +139,7 @@ classdef OdometryListener < handle
                 tfmgr.tftree.sendTransform(obj.odom_tform);
                 obj.odom_stateRenderer.showState(obj.odom_position, ...
                     obj.odom_qorientation);
-            elseif (GAZEBO_SIM==true)
+            elseif (obj.hasStateProvider)
                 %delta_t = 0;
                 % initialize actual = odom on first function call
                 disp('Initializing odom position and orientation to ground truth values.');

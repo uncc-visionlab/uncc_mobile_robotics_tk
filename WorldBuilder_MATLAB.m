@@ -32,6 +32,16 @@ classdef WorldBuilder_MATLAB < handle
         BUILD_GAZEBO_WORLD
         gazebo
         gazebo_wall_model
+
+        map_landmark_positions
+        map_landmark_colors
+        
+        landmark_models
+        landmark_colors
+        
+        gazeboSpawnedModels
+        
+        %point_light_model
         
         tfmgr
         
@@ -48,27 +58,24 @@ classdef WorldBuilder_MATLAB < handle
             clc;
             close all;
             hold off;
-            global START_TIME;
-            global GAZEBO_SIM;
             global GUI;
-            disp('Run the ROSGUI.demo function to run your code');
-            pause(10);
             GUI = ROSGUI();
+            h = GUI.getFigure('MAP');
+            set(h,'Visible','on');
             world_mat = WorldBuilder_MATLAB();
-
+            
             world_mat.consolePrint('Shutting down any active ROS processes....');
             rosshutdown;
             pause(1);
-
+            
             GAZEBO_SIM = false;
-            WORLD_MAP_INDEX=1;
+            WORLD_MAP_INDEX=3;
             world_mat.BUILD_GAZEBO_WORLD=true;
-            ACTIVATE_KOBUKI=1;
             
             if (world_mat.BUILD_GAZEBO_WORLD)
                 %ipaddress = '10.22.77.34';
-                %ipaddress = '192.168.11.178';
-                ipaddress = '10.16.30.8';
+                ipaddress = '192.168.11.180';
+                %ipaddress = '10.16.30.14';
                 if (robotics.ros.internal.Global.isNodeActive==0)
                     world_mat.consolePrint(strcat('Initializing ROS node with master IP ....', ...
                         ipaddress));
@@ -79,7 +86,7 @@ classdef WorldBuilder_MATLAB < handle
                     % "IPv4 Address" of your network card. These values
                     % should be substituted into the ip address of the
                     % command below.
-                    %rosinit(ipaddress,'NodeHost',GUI.ip_address);
+                    %rosinit(ipaddress,'NodeHost','10.38.48.111');
                     rosinit(ipaddress)
                 end
                 START_TIME = rostime('now');
@@ -98,7 +105,122 @@ classdef WorldBuilder_MATLAB < handle
             %figure(2), imshow(bwImg);
         end
     end
-    
+    methods (Static)
+        function linkstring = addLink(obj,linktype, param, varargin)
+            %addLink - Adds a link to the model
+            
+            position = [0 0 0];
+            orientation = [0 0 0];
+            bounce = [];
+            color = [];
+            
+            options = varargin(1:end);
+            numOptions = numel(options)/2;
+            for k = 1:numOptions
+                opt = options{2*k-1};
+                val = options{2*k};
+                if strcmpi(opt,'bounce')
+                    bounce = val;
+                end
+                if strcmpi(opt,'color')
+                    color = val;
+                end
+                if strcmpi(opt,'position')
+                    position = val;
+                end
+                if strcmpi(opt,'orientation')
+                    orientation = val;
+                end
+            end
+            
+            inpose = [position orientation];
+            
+            % Creating the link for the model
+            model = obj.ModelObj.getElementsByTagName('model');
+            
+            linknum = model.item(0).getElementsByTagName('link').getLength;
+            link = model.item(0).appendChild(obj.ModelObj.createElement('link'));
+            link.setAttribute('name', ['link' num2str(linknum)]);
+            
+            pose = link.appendChild(obj.ModelObj.createElement('pose'));
+            pose.appendChild(obj.ModelObj.createTextNode(num2str(inpose)));
+            
+            % The collision aspect of the object
+            collision = link.appendChild(obj.ModelObj.createElement('collision'));
+            collision.setAttribute('name','collision');
+            
+            % The visual aspect of the object
+            visual = link.appendChild(obj.ModelObj.createElement('visual'));
+            visual.setAttribute('name','visual');
+            collision.appendChild(WorldBuilder_MATLAB.getGeometry(obj,linktype,param));
+            visual.appendChild(WorldBuilder_MATLAB.getGeometry(obj,linktype,param));
+            
+            if ~isempty(bounce)
+                collision.appendChild(WorldBuilder_MATLAB.getBounce(obj,bounce));
+            end
+            
+            if ~isempty(color)
+                visual.appendChild(WorldBuilder_MATLAB.getColor(obj,color));
+            end
+            
+            linkstring = struct('Name', char(link.getAttribute('name')), 'InitialPose', ...
+                inpose);
+            obj.Links = [obj.Links; linkstring];
+            linkstring = linkstring.Name;
+        end
+        
+        function geom = getGeometry(obj,linktype,param)
+            %getGeometry - Adds geometry element to the vision or collision tag
+            
+            geom = obj.ModelObj.createElement('geometry');
+            type = geom.appendChild(obj.ModelObj.createElement(linktype));
+            dim2 = [];
+            switch linktype
+                case 'sphere'
+                    dim = type.appendChild(obj.ModelObj.createElement('radius'));
+                case 'box'
+                    dim = type.appendChild(obj.ModelObj.createElement('size'));
+                case 'cylinder'
+                    dim2 = type.appendChild(obj.ModelObj.createElement('radius'));
+                    dim = type.appendChild(obj.ModelObj.createElement('length'));
+            end
+            dim.appendChild(obj.ModelObj.createTextNode(num2str(param(1))));
+            if ~isempty(dim2)
+                dim2.appendChild(obj.ModelObj.createTextNode(num2str(param(2))));
+            end
+        end
+        
+        function material = getColor(obj,color)
+            %getColor - Creates element for the color of the link material
+            
+            material = obj.ModelObj.createElement('material');
+            ambient = material.appendChild(obj.ModelObj.createElement('ambient'));
+            diffuse = material.appendChild(obj.ModelObj.createElement('diffuse'));
+            emissive = material.appendChild(obj.ModelObj.createElement('emissive'));
+            ambient.appendChild(obj.ModelObj.createTextNode(num2str(color)));
+            diffuse.appendChild(obj.ModelObj.createTextNode(num2str(color)));
+            emissive.appendChild(obj.ModelObj.createTextNode(num2str(color)));
+        end
+        
+        function surface = getBounce(obj,bounce)
+            %getBounce - Creates element for the bounciness of the surface material
+            
+            surface = obj.ModelObj.createElement('surface');
+            bouncetag = surface.appendChild(obj.ModelObj.createElement('bounce'));
+            
+            rcoeff = bouncetag.appendChild(obj.ModelObj.createElement('restitution_coefficient'));
+            rcoeff.appendChild(obj.ModelObj.createTextNode(num2str(bounce(1))));
+            
+            threshold = bouncetag.appendChild(obj.ModelObj.createElement('threshold'));
+            threshold.appendChild(obj.ModelObj.createTextNode(num2str(0)));
+            
+            contacttag = surface.appendChild(obj.ModelObj.createElement('contact'));
+            ode = contacttag.appendChild(obj.ModelObj.createElement('ode'));
+            maxvel = ode.appendChild(obj.ModelObj.createElement('max_vel'));
+            maxvel.appendChild(obj.ModelObj.createTextNode(num2str(bounce(2))));
+        end
+    end
+
     methods
         function obj = WorldBuilder_MATLAB()
             global GUI;
@@ -127,13 +249,42 @@ classdef WorldBuilder_MATLAB < handle
         function setGazeboBuilder(obj, gazbuilder)
             obj.gazebo = gazbuilder;
             obj.gazebo_wall_model = ExampleHelperGazeboModel('grey_wall','gazeboDB');
+            %obj.point_light_model = ExampleHelperGazeboModel('user_point_light','gazeboDB');
+            obj.landmark_colors = [1.0 0.0 0.0;
+                0.0 1.0 0.0;
+                0.0 0.0 1.0;
+                1.0 1.0 0.0;
+                0.0 1.0 1.0;
+                1.0 0.0 1.0];
+                %0.5 0.5 0.0;
+                %0.0 0.5 0.5;
+                %0.5 0.0 0.5];
+            numLandmarkModels = size(obj.landmark_colors,1);
+            for modelIdx=1:numLandmarkModels
+                nameStr = sprintf('landmark_sdfs/landmark_%03d',modelIdx);
+                obj.landmark_models{modelIdx} = ExampleHelperGazeboModel(nameStr);
+                if (1==0)
+                landmark_model = obj.landmark_models{modelIdx};
+                    cyl_height_radius = [0.3 0.02];
+                    sphere_radius = 0.05;
+                    link1 = WorldBuilder_MATLAB.addLink( landmark_model, ...
+                        'cylinder',cyl_height_radius, ...
+                        'position',[0,0,0.5*cyl_height_radius(1)], ...
+                        'color', [1 1 1 1]);
+                    link2 = WorldBuilder_MATLAB.addLink( landmark_model, ...
+                        'sphere',sphere_radius, ...
+                        'position',[0,0, cyl_height_radius(1)+0.5*sphere_radius], ...
+                        'color',[0.7 0 0.2 1]);
+                    landmark_model.addJoint( link1, link2, 'revolute', [0 0], ...
+                        [0 0 cyl_height_radius(1)]);
+                end
+            end
         end
-        
         
         function makeMap(world_mat, map_index)
             dir_right=[1,0]';
             dir_up=[0,1]';
-            if (map_index==1)
+            if (map_index == 1)
                 pstart=[-3.5,-3.5]';
                 pend=pstart+1*world_mat.walldims(1)*dir_right;
                 world_mat.makeWall(pstart, pend);
@@ -146,7 +297,7 @@ classdef WorldBuilder_MATLAB < handle
                 pstart=pend;
                 pend=pstart-1*world_mat.walldims(1)*dir_up;
                 world_mat.makeWall(pstart, pend);
-            elseif (WORLD_MAP_INDEX==2)
+            elseif (map_index == 2)
                 pstart=[-20,-10]';
                 pend=pstart+6*world_mat.walldims(1)*dir_right;
                 world_mat.makeWall(pstart, pend);
@@ -177,6 +328,31 @@ classdef WorldBuilder_MATLAB < handle
                 pstart=pend+[1.5*world_mat.walldims(1),0]';
                 pend=pstart+2*world_mat.walldims(1)*dir_up;
                 world_mat.makeWall(pstart, pend);
+            elseif (map_index == 3)
+                pstart=[-3.5,-3.5]';
+                pend=pstart+1*world_mat.walldims(1)*dir_right;
+                world_mat.makeWall(pstart, pend);
+                pstart=pend;
+                pend=pstart+1*world_mat.walldims(1)*dir_up;
+                world_mat.makeWall(pstart, pend);
+                pstart=pend;
+                pend=pstart-1*world_mat.walldims(1)*dir_right;
+                world_mat.makeWall(pstart, pend);
+                pstart=pend;
+                pend=pstart-1*world_mat.walldims(1)*dir_up;
+                world_mat.makeWall(pstart, pend);
+                numLandmarks = 6;
+                if (world_mat.BUILD_GAZEBO_WORLD)
+                    %world_mat.gazebo.spawnModel(world_mat.point_light_model , ...
+                    %    [0, 0, .5]);
+                end
+                [x,y]=StateRenderer.makeCircle(3.3, numLandmarks, [.2 .2]);
+                for landmarkIdx=1:numLandmarks
+                    world_mat.map_landmark_colors(landmarkIdx,:) = world_mat.landmark_colors(landmarkIdx,:); 
+                    world_mat.map_landmark_positions(landmarkIdx,:) = [x(landmarkIdx), ...
+                        y(landmarkIdx)];
+                    world_mat.makeLandmark(x(landmarkIdx), y(landmarkIdx), landmarkIdx);
+                end
             end
         end
         
@@ -195,18 +371,40 @@ classdef WorldBuilder_MATLAB < handle
                 bb_prime = R_z*bb;
                 bb_prime = bb_prime+p_center*ones(1,5);
                 if (obj.BUILD_GAZEBO_WORLD)
-                    obj.gazebo.spawnModel(obj.gazebo_wall_model, ...
+                    obj.gazeboSpawnedModels{end+1} = obj.gazebo.spawnModel( ...
+                        obj.gazebo_wall_model, ...
                         [p_center', 0],[0 0 theta]);
                 end
                 GUI.setFigure('MAP');
                 plot(bb_prime(1,:),bb_prime(2,:));
-                obj.polygonList.x(polygonIndex,:)=bb_prime(1,:);
-                obj.polygonList.y(polygonIndex,:)=bb_prime(2,:);
+                obj.polygonList{polygonIndex}.x=bb_prime(1,:);
+                obj.polygonList{polygonIndex}.y=bb_prime(2,:);
                 wall_len = wall_len + 7.5;
                 p_center = p_center+dir*7.5;
                 polygonIndex = polygonIndex + 1;
             end
-            obj.numPolygons = size(obj.polygonList.x,1);
+            obj.numPolygons = length(obj.polygonList);
+            axis equal;
+        end
+        
+        function makeLandmark(obj, x, y, index)
+            global GUI;
+            if ~exist('index','var')
+                index = 1;
+            elseif (index <= 0 || index > length(obj.landmark_models))
+                index = mod(index,length(obj.landmark_models));
+            end
+            if (obj.BUILD_GAZEBO_WORLD)
+                obj.gazeboSpawnedModels{end+1} = obj.gazebo.spawnModel(...
+                    obj.landmark_models{index},[x,y,1.7]);
+            end
+            polygonIndex=obj.numPolygons+1;
+            [x, y] = StateRenderer.makeCircle(0.2,10,[x y]);
+            GUI.setFigure('MAP');
+            plot( x, y, 'Color', obj.landmark_colors(index,:));
+            obj.polygonList{polygonIndex}.x=x;
+            obj.polygonList{polygonIndex}.y=y;
+            obj.numPolygons = length(obj.polygonList);
             axis equal;
         end
         
@@ -215,16 +413,19 @@ classdef WorldBuilder_MATLAB < handle
             if (exist('im_margin','var')==0)
                 im_margin=[0;0];
             end
-            xy_max = [max(max(obj.polygonList.x)); ...
-                max(max(obj.polygonList.y))];
-            xy_min = [min(min(obj.polygonList.x)); ...
-                min(min(obj.polygonList.y))];
+            xy_max = [-Inf;-Inf];
+            xy_min = [+Inf;+Inf];
+            for idx=1:obj.numPolygons
+                xy_max = [max(obj.polygonList{idx}.x,xy_max(1)); ...
+                    max(obj.polygonList{idx}.y,xy_max(2))];
+                xy_min = [min(obj.polygonList{idx}.x,xy_min(1)); ...
+                    min(obj.polygonList{idx}.y,xy_min(2))];
+            end
             xy_delta=(xy_max - xy_min)./[width-2*im_margin(1); ...
                 height-2*im_margin(2)];
             delta = max(xy_delta);
             for row=im_margin(2):(height-im_margin(2))
                 yVal = xy_min(2) + (row-im_margin(2))*delta;
-                %yVal = xy_max(2) - (row-1)*delta;
                 if (mod(row-im_margin(2),0.1*(height-2*im_margin(2)))==0)
                     fprintf(1,'%0.2f percent done...\n', ...
                         100*(row-im_margin(2))/(height-2*im_margin(2)));
@@ -234,8 +435,8 @@ classdef WorldBuilder_MATLAB < handle
                     pt2d = [xVal; yVal];
                     for polyIdx=1:obj.numPolygons
                         if (inpolygon(pt2d(1),pt2d(2),...
-                                obj.polygonList.x(polyIdx,:), ...
-                                obj.polygonList.y(polyIdx,:)))
+                                obj.polygonList{polyIdx}.x, ...
+                                obj.polygonList{polyIdx}.y))
                             bwImg(height-row,col)=1;
                         end
                     end
@@ -272,6 +473,7 @@ classdef WorldBuilder_MATLAB < handle
             %resetSimulationButtonCallback Callback when user presses "Reset simulation" button
             %resetSimulation(obj);
             % disp('Reset sim');
+            obj.gazebo.resetSim();
             if (isempty(obj.kobuki)==0)
                 setState(obj.kobuki,'position',[0 0 0], ...
                     'orientation', [0 0 0], ...

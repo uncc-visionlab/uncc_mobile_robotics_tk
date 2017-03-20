@@ -29,19 +29,36 @@ classdef StateRenderer < handle
         arrow_color        % color of the orientation arrow
     end
     
+    methods (Static)
+        function [x,y] = makeCircle(radius, numVerts, center)
+            if ~exist('center','var')
+                center=[0 0];
+            end
+            delta_theta=2*pi/numVerts; % angle increment for Kobuki base polygon
+            for thetaIdx=0:numVerts
+                theta = thetaIdx*delta_theta;
+                x(thetaIdx+1)=radius*cos(theta)+center(1);
+                y(thetaIdx+1)=radius*sin(theta)+center(2);
+            end            
+        end
+    end
+    
     methods
         function obj = StateRenderer()
             % setup the polygons to draw the Kobuki base
             % polygons are a circle and an arrow showing orientation
             obj.baseRadius=0.2; % radius of Kobuki base
-            delta_theta=pi/6; % angle increment for Kobuki base polygon
-            numVerts=2*pi/delta_theta;
-            obj.boundaryPolyPoints=zeros(2,numVerts);
-            for thetaIdx=0:numVerts
-                theta = thetaIdx*delta_theta;
-                obj.boundaryPolyPoints(1,thetaIdx+1)=obj.baseRadius*cos(theta);
-                obj.boundaryPolyPoints(2,thetaIdx+1)=obj.baseRadius*sin(theta);
-            end
+            [x,y] = StateRenderer.makeCircle(obj.baseRadius, 12, [0,0]);
+            obj.boundaryPolyPoints(1,:) = x;
+            obj.boundaryPolyPoints(2,:) = y;
+%            delta_theta=pi/6; % angle increment for Kobuki base polygon
+%            numVerts=2*pi/delta_theta;
+%            obj.boundaryPolyPoints=zeros(2,numVerts);
+%            for thetaIdx=0:numVerts
+%                theta = thetaIdx*delta_theta;
+%                obj.boundaryPolyPoints(1,thetaIdx+1)=obj.baseRadius*cos(theta);
+%                obj.boundaryPolyPoints(2,thetaIdx+1)=obj.baseRadius*sin(theta);
+%            end
             obj.orientationPolyPoints = [ ...
                 -0.6609 -0.6609 0.1437 0.1437 0.7471  0.1437    0.1437 -0.6609;
                 -0.2012  0.2012 0.2012 0.4023 0      -0.4023   -0.2012 -0.2012];

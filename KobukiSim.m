@@ -12,7 +12,7 @@
 %    You should have received a copy of the GNU General Public License
 %    along with this program; if not, write to the Free Software Foundation,
 %    Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
-classdef Kobuki < handle
+classdef KobukiSim < ExampleHelperGazeboSpawnedModel
     % Kobuki This class handles the kobuki/turtlebot as an object. It can
     % be used to access the sensor suite of the robot and it holds
     % references to all of the objects that it "contains." For example it
@@ -22,6 +22,7 @@ classdef Kobuki < handle
     % complexity of higher level code for multi-robot contexts.
     
     properties
+        world_gazebo
         
         laserScanListener
         rgbCamListener        
@@ -32,15 +33,18 @@ classdef Kobuki < handle
     end
     
     methods
-        function obj = Kobuki()
-            obj.laserScanListener = LaserScanListener('/scan');
-            obj.rgbCamListener = RGBCameraListener();
+        function obj = KobukiSim(gazebo)
+            obj@ExampleHelperGazeboSpawnedModel('mobile_base',gazebo);
+            obj.world_gazebo = gazebo;
+            obj.laserScanListener = LaserScanListener('/hokuyo_scan');
+            %obj.rgbCamListener = RGBCameraListener();
+            obj.rgbCamListener = RGBLandmarkEstimator();
             %obj.odometryListener = OdometryPathRecorder(obj);
             obj.odometryListener = OdometryListener(obj);
             %obj.velocityController = LaserScanAvoidController();
             %obj.odometryEKF = OdomEstimationNode(true, true, false, false);
-            obj.velocityController = PurePursuitController(obj);
-            %obj.velocityController = PurePursuitController_Student(obj);
+            %obj.velocityController = PurePursuitController(obj);
+            obj.velocityController = PurePursuitController_Student(obj);
         end
                         
         function sendVelocityCommand(kobuki, velocityMsg)

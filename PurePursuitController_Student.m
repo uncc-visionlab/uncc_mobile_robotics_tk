@@ -93,10 +93,8 @@ classdef PurePursuitController_Student < OdometryPathRecorder
             persistent actual_path path_error;
             
             if (isa(varargin{1},'timer')==1)
-                %message = varargin{3}.LatestMessage;
                 tfmgr = varargin{4};
             else
-                %message = varargin{1}.LatestMessage;
                 tfmgr = varargin{2};
             end
             obj.odometryCallback@OdometryPathRecorder(varargin{:});
@@ -162,6 +160,8 @@ classdef PurePursuitController_Student < OdometryPathRecorder
             currentPos = pose.position(1:2)';
             rpy=PurePursuitController_Student.quat2rpy(pose.qorientation);
             yawAngle = rpy(3);
+            obj.velocityMsg.Angular.Z = 0.1;         % optimal control
+            send(obj.velocityPub, obj.velocityMsg);
             if (obj.goalPtIdx==0)
                 return;
             end
@@ -179,7 +179,7 @@ classdef PurePursuitController_Student < OdometryPathRecorder
             %%%%% ADD CODE HERE %%%%%%%%%%
             
             % Command robot action
-            %obj.velocityMsg.Angular.Z = w;         % optimal control
+            %obj.velocityMsg.Angular.Z = 0.1;         % optimal control
             %obj.velocityMsg.Angular.Z = 0.4*angleError; % proportional control
             obj.velocityMsg.Linear.X = obj.maxLinearVelocity;
             

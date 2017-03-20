@@ -21,122 +21,6 @@ classdef ROSGUI < handle
             global START_TIME;
             global GAZEBO_SIM;
             global GUI;
-            %addpath('./bfl/pdf');
-            %addpath('./bfl/model');
-            %addpath('./robot_pose_ekf');
-            
-            WORLD_MAP_INDEX=1;
-            BUILD_GAZEBO_WORLD=true;
-            ACTIVATE_KOBUKI=true;
-            
-            START_TIME = -1;
-            GAZEBO_SIM = false;
-            GUI = ROSGUI();
-            
-            if (robotics.ros.internal.Global.isNodeActive==1)
-                GUI.consolePrint('Shutting down any active ROS processes....');
-                rosshutdown;
-                pause(3);
-            end
-            
-            if (GUI.VERBOSE)
-                GUI.consolePrint('Creating MATLAB world ....');
-            end
-            world_mat = WorldBuilder_MATLAB();
-            GUI.world_mat = world_mat;
-            
-            h = GUI.getFigure('MAP');
-            set(h,'Visible','on');
-            %h = GUI.getFigure('IMAGE');
-            %set(h,'Visible','on');
-            h = GUI.getFigure('ERROR');
-            set(h,'Visible','on');
-            
-            if (BUILD_GAZEBO_WORLD)
-                %ipaddress = '10.22.77.34';
-                %ipaddress = '192.168.11.178';
-                ipaddress = '10.22.71.32';
-                %ipaddress = GUI.ip_address;
-                if (robotics.ros.internal.Global.isNodeActive==0)
-                    GUI.consolePrint(strcat(...
-                        'Initializing ROS node with master IP .... ', ...
-                        ipaddress));
-                    % REPLACE THIS IP WITH YOUR COMPUTER / HOST IP
-                    % You can get your host IP by opening the "cmd" program
-                    % (from the "run" dialog) and typing "ipconfig" into the
-                    % command prompt. Review the console output and find the
-                    % "IPv4 Address" of your network card. These values
-                    % should be substituted into the ip address of the
-                    % command below.
-                    if (ispc)
-                        rosinit(ipaddress,'NodeHost',GUI.ip_address);
-                    else
-                        rosinit(ipaddress)
-                    end
-                end
-                START_TIME = rostime('now');
-                GAZEBO_SIM = true;
-                world_gaz = WorldBuilder_Gazebo();
-                world_mat.setGazeboBuilder(world_gaz);
-                list = getSpawnedModels(world_gaz);
-                if (ismember('grey_wall',list))
-                    world_mat.BUILD_GAZEBO_WORLD=false;
-                else
-                    world_mat.BUILD_GAZEBO_WORLD=BUILD_GAZEBO_WORLD;
-                end
-                world_mat.makeMap(WORLD_MAP_INDEX);
-                %world_gaz.removeAllTemporaryModels();
-            end
-            
-            if (ACTIVATE_KOBUKI)
-                GUI.consolePrint('Initializing a ROS TF Transform Tree....');
-                world_mat.tfmgr = TFManager();
-                
-                kobuki = Kobuki(world_gaz);
-                world_mat.kobuki = kobuki;
-                
-                if (isempty(world_mat.wayPoints) && 1==0)
-                    pause(2);
-                    uiwait(msgbox({'Specify desired robot path', ...
-                        'with a sequence of waypoints using the mouse.', ...
-                        'Del (remove), Double-click when done'}, 'help'));
-                    world_mat.wayPoints = getline();
-                    position = kobuki.getState();
-                    world_mat.wayPoints = [position(1:2); ...
-                        world_mat.wayPoints];
-                elseif (WORLD_MAP_INDEX==1)
-                    position = kobuki.getState();
-                    world_mat.wayPoints = [position(1:2); ...
-                        2 2; -2 -2; 2 -2; -2 2];
-                end
-                
-                if (~isempty(world_mat.wayPoints))
-                    path = world_mat.wayPoints
-                    GUI.setFigure('MAP');
-                    path_handle = plot(path(:,1), path(:,2),'k--d');
-                end
-                % seconds (odometry)
-                %kobuki.odometryListener.setCallbackRate('fastest');
-                kobuki.odometryListener.setCallbackRate(0.1, world_mat.tfmgr);
-                kobuki.laserScanListener.setCallbackRate(0.5, world_mat.tfmgr);
-                %kobuki.rgbCamListener.setCallbackRate(4, world_mat.tfmgr);
-                %kobuki.odometryEKF.setTransformer(world_mat.tfmgr);
-                
-                if (isa(kobuki.velocityController,'PurePursuitController_Student'))
-                    disp('Sending waypoints to pure pursuit controller.');
-                    kobuki.velocityController.setWaypoints(world_mat.wayPoints);
-                elseif (isa(kobuki.velocityController,'PurePursuitController'))
-                    disp('Sending waypoints to pure pursuit controller.');
-                    kobuki.velocityController.setWaypoints(world_mat.wayPoints);
-                end
-                if (~isempty(kobuki.velocityController))
-                    kobuki.velocityController.setCallbackRate(0.1, world_mat.tfmgr);
-                end
-            end
-        end
-        function testIP
-            rgui = ROSGUI();
-            fprintf(1,'Your IP is : %s\n',rgui.ip_address);
         end
     end
     
@@ -231,6 +115,18 @@ classdef ROSGUI < handle
         function consolePrint(obj, stringVal)
             if (obj.VERBOSE)
                 disp(stringVal)
+            end
+        end
+        
+        function ROS_DEBUG(obj, varargin)
+            if (false)
+                fprintf(1,strcat(varargin{1},'\n'),varargin{2:end});
+            end
+        end
+        
+        function ROS_INFO(obj, varargin)
+            if (false)
+                fprintf(1,strcat(varargin{1},'\n'),varargin{2:end});
             end
         end
     end

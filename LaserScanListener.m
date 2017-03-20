@@ -17,6 +17,7 @@ classdef LaserScanListener < handle
         %laserScanTopic
         laserScanSub
         laserScanTimer
+        tf_baseNode
     end
     
     methods (Static)
@@ -54,8 +55,9 @@ classdef LaserScanListener < handle
     end
     
     methods
-        function obj = LaserScanListener()
-            obj.laserScanSub = rossubscriber('/hokuyo_scan','BufferSize',10);
+        function obj = LaserScanListener(topicstr)
+            obj.laserScanSub = rossubscriber(topicstr,'BufferSize',10);
+            obj.tf_baseNode = 'base_link';
         end
         
         function setCallbackRate(obj, rate, tfmgr)
@@ -79,9 +81,9 @@ classdef LaserScanListener < handle
                 laserScanMessage = varargin{1}.LatestMessage;
                 tfmgr = varargin{2};
             end
-            if (tfmgr.tftree.canTransform('map', 'base_link')==1)
-                tfmgr.tftree.waitForTransform('map', 'base_link')
-                map2basetf = tfmgr.tftree.getTransform('map', 'base_link');%, ...
+            if (tfmgr.tftree.canTransform('map', obj.tf_baseNode)==1)
+                tfmgr.tftree.waitForTransform('map', obj.tf_baseNode)
+                map2basetf = tfmgr.tftree.getTransform('map', obj.tf_baseNode);%, ...
                 scanTime = laserScanMessage.Header.Stamp.Sec+laserScanMessage.Header.Stamp.Nsec*10^-9;
                 tfTime = map2basetf.Header.Stamp.Sec+map2basetf.Header.Stamp.Nsec*10^-9;
                 %rostime('now') - rosduration(0.2), 'Timeout', 2);
