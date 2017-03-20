@@ -13,9 +13,9 @@ classdef ROSGUI_Localize < ROSGUI
             global START_TIME;
             global GAZEBO_SIM;
             global GUI;
-            addpath('./bfl/pdf');
-            addpath('./bfl/model');
-            addpath('./robot_pose_ekf');
+            %addpath('./bfl/pdf');
+            %addpath('./bfl/model');
+            %addpath('./robot_pose_ekf');
             SIMULATE = true;
             if (SIMULATE)
                 WORLD_MAP_INDEX = 3;
@@ -50,9 +50,9 @@ classdef ROSGUI_Localize < ROSGUI
             %set(h,'Visible','on');
             
             %ipaddress = '10.22.77.34';
-            ipaddress = '192.168.11.180';
+            %ipaddress = '192.168.11.180';
             %ipaddress = '192.168.1.10';
-            %ipaddress = '10.16.30.14';
+            ipaddress = '10.16.30.11';
             if (robotics.ros.internal.Global.isNodeActive==0)
                 GUI.consolePrint(strcat(...
                     'Initializing ROS node with master IP .... ', ...
