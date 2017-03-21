@@ -38,6 +38,7 @@ classdef WorldBuilder_MATLAB < handle
         
         landmark_models
         landmark_colors
+        landmark_diameter
         
         gazeboSpawnedModels
         
@@ -259,6 +260,7 @@ classdef WorldBuilder_MATLAB < handle
                 %0.5 0.5 0.0;
                 %0.0 0.5 0.5;
                 %0.5 0.0 0.5];
+            obj.landmark_diameter = 0.1; % 10 cm diameter
             numLandmarkModels = size(obj.landmark_colors,1);
             for modelIdx=1:numLandmarkModels
                 nameStr = sprintf('landmark_sdfs/landmark_%03d',modelIdx);
@@ -399,11 +401,12 @@ classdef WorldBuilder_MATLAB < handle
                     obj.landmark_models{index},[x,y,1.7]);
             end
             polygonIndex=obj.numPolygons+1;
-            [x, y] = StateRenderer.makeCircle(0.2,10,[x y]);
+            [px, py] = StateRenderer.makeCircle(obj.landmark_diameter/2, ...
+                10,[x y]);
             GUI.setFigure('MAP');
-            plot( x, y, 'Color', obj.landmark_colors(index,:));
-            obj.polygonList{polygonIndex}.x=x;
-            obj.polygonList{polygonIndex}.y=y;
+            plot( px, py, 'Color', obj.landmark_colors(index,:));
+            obj.polygonList{polygonIndex}.x=px;
+            obj.polygonList{polygonIndex}.y=py;
             obj.numPolygons = length(obj.polygonList);
             axis equal;
         end
