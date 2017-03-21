@@ -38,7 +38,8 @@ classdef KobukiSim < ExampleHelperGazeboSpawnedModel
             obj.world_gazebo = gazebo;
             obj.laserScanListener = LaserScanListener('/hokuyo_scan');
             %obj.rgbCamListener = RGBCameraListener();
-            obj.rgbCamListener = RGBLandmarkEstimator();
+            %obj.rgbCamListener = RGBLandmarkEstimator();
+            obj.rgbCamListener = RGBLandmarkEstimator_Student();
             %obj.odometryListener = OdometryPathRecorder(obj);
             obj.odometryListener = OdometryListener(obj);
             %obj.velocityController = LaserScanAvoidController();
