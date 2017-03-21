@@ -132,7 +132,16 @@ classdef ROSGUI_Localize < ROSGUI
                     %kobuki.odometryListener.setAddNoise(true, noiseMean, noiseCovariance);
                 end
                 kobuki.odometryListener.setCallbackRate(0.3, world_mat.tfmgr);
-                kobuki.laserScanListener.setCallbackRate(2, world_mat.tfmgr);
+                %kobuki.laserScanListener.setCallbackRate(2, world_mat.tfmgr);
+                if (isa(kobuki.rgbCamListener,'RGBLandmarkEstimator'))
+                    kobuki.rgbCamListener.setLandmarkPositions(world_mat.map_landmark_positions);
+                    kobuki.rgbCamListener.setLandmarkColors(world_mat.map_landmark_colors);
+                    kobuki.rgbCamListener.setLandmarkDiameter(2*0.05); % 10 cm diameter markers
+                elseif (isa(kobuki.rgbCamListener,'RGBLandmarkEstimator_Student'))
+                    kobuki.rgbCamListener.setLandmarkPositions(world_mat.map_landmark_positions);
+                    kobuki.rgbCamListener.setLandmarkColors(world_mat.map_landmark_colors);
+                    kobuki.rgbCamListener.setLandmarkDiameter(2*0.05); % 10 cm diameter markers
+                end
                 kobuki.rgbCamListener.setCallbackRate(4, world_mat.tfmgr);
                 kobuki.rgbCamListener.getCameraInfo();
                 %kobuki.odometryEKF.setTransformer(world_mat.tfmgr);

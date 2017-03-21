@@ -51,14 +51,6 @@ classdef StateRenderer < handle
             [x,y] = StateRenderer.makeCircle(obj.baseRadius, 12, [0,0]);
             obj.boundaryPolyPoints(1,:) = x;
             obj.boundaryPolyPoints(2,:) = y;
-%            delta_theta=pi/6; % angle increment for Kobuki base polygon
-%            numVerts=2*pi/delta_theta;
-%            obj.boundaryPolyPoints=zeros(2,numVerts);
-%            for thetaIdx=0:numVerts
-%                theta = thetaIdx*delta_theta;
-%                obj.boundaryPolyPoints(1,thetaIdx+1)=obj.baseRadius*cos(theta);
-%                obj.boundaryPolyPoints(2,thetaIdx+1)=obj.baseRadius*sin(theta);
-%            end
             obj.orientationPolyPoints = [ ...
                 -0.6609 -0.6609 0.1437 0.1437 0.7471  0.1437    0.1437 -0.6609;
                 -0.2012  0.2012 0.2012 0.4023 0      -0.4023   -0.2012 -0.2012];

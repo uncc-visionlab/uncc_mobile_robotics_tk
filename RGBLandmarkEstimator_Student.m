@@ -1,13 +1,12 @@
-classdef RGBLandmarkEstimator < RGBCameraListener
+classdef RGBLandmarkEstimator_Student < RGBCameraListener
     %UNTITLED Summary of this class goes here
     %   Detailed explanation goes here
     
     properties       
         landmarkPositions
         landmarkColors
-        landmarkDiameter        
+        landmarkDiameter
     end
-    
     methods (Static)
         function test
             clear;
@@ -30,7 +29,7 @@ classdef RGBLandmarkEstimator < RGBCameraListener
             %img_vals = reshape(double(img_rgb),rows*cols,comps);
             %img_vals = img_vals-(img_vals*vg').*img_vals;
             %imshow(uint8(reshape(img_vals,rows,cols,comps)),[])
-            [idxs,centers,radii] = RGBLandmarkEstimator.findColoredSpheres( ...
+            [idxs,centers,radii] = RGBLandmarkEstimator_Student.findColoredSpheres( ...
                 img_rgb,landmark_colors);
             for lidx=1:length(idxs)
                 idx=idxs(lidx);
@@ -128,7 +127,7 @@ classdef RGBLandmarkEstimator < RGBCameraListener
     end
     
     methods
-        function obj = RGBLandmarkEstimator()
+        function obj = RGBLandmarkEstimator_Student()
             obj@RGBCameraListener();
         end
         
@@ -142,13 +141,12 @@ classdef RGBLandmarkEstimator < RGBCameraListener
         
         function setLandmarkDiameter(obj, diameter)
             obj.landmarkDiameter = diameter;
-        end        
+        end
                 
         function processImage(obj, imgRGB, tfmgr)
             global GUI;
-            physical_diameter_m = obj.landmarkDiameter;
             RGBCameraListener.showRGBImage(imgRGB);
-            [idxs,centers,radii] = RGBLandmarkEstimator.findColoredSpheres( ...
+            [idxs,centers,radii] = RGBLandmarkEstimator_Student.findColoredSpheres( ...
                 imgRGB, obj.landmarkColors);
             GUI.setFigure('IMAGE')
             for lidx=1:length(idxs)
@@ -160,11 +158,10 @@ classdef RGBLandmarkEstimator < RGBCameraListener
                     'LineWidth', 0.5);                
                 if (~isempty(obj.Pmatrix))
                     focal_lengths = [obj.Pmatrix(1,1), obj.Pmatrix(2,2)];
-                    principal_pt =[obj.Pmatrix(1,3), obj.Pmatrix(2,3)];
-                    depth_m = physical_diameter_m*focal_lengths(1)/(2*radius);
-                    x_m = (depth_m*(xy_center(1)-principal_pt(1))/focal_lengths(1));                    
-                    phi = -atan2(xy_center(1)-principal_pt(1),focal_lengths(1));
-                    radius_m = sqrt(depth_m^2+x_m^2);
+                    principal_pt =[obj.Pmatrix(1,3), obj.Pmatrix(2,3)];                   
+                    physical_diameter_m = obj.landmarkDiameter;
+                    phi = 0;
+                    radius_m = 0;
                     fprintf('Landmark %d detected at (Radius,Heading) (%0.2f m., %0.2f degrees)\n', ...
                         idx, radius_m, phi*180/pi);
                     if (tfmgr.tftree.canTransform('map', 'base_link_truth'))

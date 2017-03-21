@@ -105,13 +105,13 @@ classdef RGBCameraListener < handle
                 if ~isempty(imgRGB)
                     obj.latestImage = imgRGB;
                 end                
-                obj.processImage(imgRGB);
+                obj.processImage(imgRGB, tfmgr);
             else
                 disp('RGBCameraListener could not get map->base_link transform');
             end
         end
                
-        function processImage(obj, imgRGB)
+        function processImage(obj, imgRGB, tfmgr)
             RGBCameraListener.showRGBImage(imgRGB);
             obj.saveImageData(imgRGB);
         end

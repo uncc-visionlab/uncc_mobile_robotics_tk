@@ -81,7 +81,7 @@ classdef LaserScanListener < handle
                 laserScanMessage = varargin{1}.LatestMessage;
                 tfmgr = varargin{2};
             end
-            if (tfmgr.tftree.canTransform('map', obj.tf_baseNode)==1)
+            if (tfmgr.tftree.canTransform('map', obj.tf_baseNode))
                 tfmgr.tftree.waitForTransform('map', obj.tf_baseNode)
                 map2basetf = tfmgr.tftree.getTransform('map', obj.tf_baseNode);%, ...
                 scanTime = laserScanMessage.Header.Stamp.Sec+laserScanMessage.Header.Stamp.Nsec*10^-9;
