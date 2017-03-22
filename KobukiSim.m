@@ -27,7 +27,7 @@ classdef KobukiSim < ExampleHelperGazeboSpawnedModel
         laserScanListener
         rgbCamListener        
         odometryListener
-        odometryEKF
+        localizationEKF
         
         velocityController
     end
@@ -37,15 +37,19 @@ classdef KobukiSim < ExampleHelperGazeboSpawnedModel
             obj@ExampleHelperGazeboSpawnedModel('mobile_base',gazebo);
             obj.world_gazebo = gazebo;
             obj.laserScanListener = LaserScanListener('/hokuyo_scan');
+
             %obj.rgbCamListener = RGBCameraListener();
             %obj.rgbCamListener = RGBLandmarkEstimator();
             obj.rgbCamListener = RGBLandmarkEstimator_Student();
+
             %obj.odometryListener = OdometryPathRecorder(obj);
             obj.odometryListener = OdometryListener(obj);
+
             %obj.velocityController = LaserScanAvoidController();
-            %obj.odometryEKF = OdomEstimationNode(true, true, false, false);
             %obj.velocityController = PurePursuitController(obj);
             obj.velocityController = PurePursuitController_Student(obj);
+
+            %obj.localizationEKF = OdomEstimationNode(true, true, false, false);
         end
                         
         function sendVelocityCommand(kobuki, velocityMsg)

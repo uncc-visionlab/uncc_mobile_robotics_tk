@@ -35,6 +35,9 @@ classdef OdometryListener < handle
         ADD_NOISE
         noiseMean
         noiseCovariance
+        
+        failedMsgCount
+        MAX_BAD_MSGS
     end
 
     methods
@@ -61,6 +64,9 @@ classdef OdometryListener < handle
             obj.actual_stateRenderer = StateRenderer(); % draws ground truth state
             obj.actual_stateRenderer.body_color = [0.4 0.4 0.4];
             obj.actual_stateRenderer.arrow_color = [0.6 0.6 0.6];
+            
+            obj.failedMsgCount = 0;
+            obj.MAX_BAD_MSGS = 10;            
         end
         
         function setCallbackRate(obj, rate, tfmgr)
@@ -96,6 +102,18 @@ classdef OdometryListener < handle
             else
                 message = varargin{1}.LatestMessage;
                 tfmgr = varargin{2};
+            end
+            
+            if (isempty(message))
+                disp('OdometryListener::Skipping empty odometry message.');
+                obj.failedMsgCount = obj.failedMsgCount + 1;
+                if (obj.failedMsgCount > obj.MAX_BAD_MSGS)
+                    delete obj;
+                else
+                    return;
+                end
+            else
+                obj.failedMsgCount = 0;
             end
             
             %time_cur = rostime(message.Header.Stamp.Sec,message.Header.Stamp.Nsec);

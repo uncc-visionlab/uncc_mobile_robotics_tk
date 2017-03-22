@@ -18,6 +18,8 @@ classdef LaserScanListener < handle
         laserScanSub
         laserScanTimer
         tf_baseNode
+        failedMsgCount
+        MAX_BAD_MSGS        
     end
     
     methods (Static)
@@ -58,6 +60,8 @@ classdef LaserScanListener < handle
         function obj = LaserScanListener(topicstr)
             obj.laserScanSub = rossubscriber(topicstr,'BufferSize',10);
             obj.tf_baseNode = 'base_link';
+            obj.failedMsgCount = 0;
+            obj.MAX_BAD_MSGS = 5;            
         end
         
         function setCallbackRate(obj, rate, tfmgr)
@@ -81,6 +85,19 @@ classdef LaserScanListener < handle
                 laserScanMessage = varargin{1}.LatestMessage;
                 tfmgr = varargin{2};
             end
+            
+            if (isempty(laserScanMessage))
+                disp('LaserScanListener::Skipping empty laser scan message.');
+                obj.failedMsgCount = obj.failedMsgCount + 1;
+                if (obj.failedMsgCount > obj.MAX_BAD_MSGS)
+                    delete obj;
+                else
+                    return;
+                end
+            else
+                obj.failedMsgCount = 0;                
+            end
+
             if (tfmgr.tftree.canTransform('map', obj.tf_baseNode))
                 tfmgr.tftree.waitForTransform('map', obj.tf_baseNode)
                 map2basetf = tfmgr.tftree.getTransform('map', obj.tf_baseNode);%, ...

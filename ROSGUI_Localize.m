@@ -4,6 +4,7 @@ classdef ROSGUI_Localize < ROSGUI
     
     properties
     end
+    
     methods (Static)
         function demo
             clear;
@@ -50,9 +51,9 @@ classdef ROSGUI_Localize < ROSGUI
             %set(h,'Visible','on');
             
             %ipaddress = '10.22.77.34';
-            %ipaddress = '192.168.11.180';
+            ipaddress = '192.168.11.178';
             %ipaddress = '192.168.1.10';
-            ipaddress = '10.16.30.11';
+            %ipaddress = '10.16.30.11';
             if (robotics.ros.internal.Global.isNodeActive==0)
                 GUI.consolePrint(strcat(...
                     'Initializing ROS node with master IP .... ', ...
@@ -88,7 +89,7 @@ classdef ROSGUI_Localize < ROSGUI
             
             if (ACTIVATE_KOBUKI)
                 GUI.consolePrint('Initializing a ROS TF Transform Tree....');
-                world_mat.tfmgr = TFManager();
+                world_mat.tfmgr = TFManager(2);
                 if (false)
                     velocityPub = rospublisher('/mobile_base/commands/velocity');
                     velocityMsg = rosmessage(obj.velocityPub);
@@ -131,13 +132,11 @@ classdef ROSGUI_Localize < ROSGUI
                     noiseCovariance(4:6,4:6) = 2*(pi/180)*noiseCovariance(1:3,1:3);
                     %kobuki.odometryListener.setAddNoise(true, noiseMean, noiseCovariance);
                 end
-                kobuki.odometryListener.setCallbackRate(0.3, world_mat.tfmgr);
+                %kobuki.odometryListener.setCallbackRate(0.5, world_mat.tfmgr);
                 %kobuki.laserScanListener.setCallbackRate(2, world_mat.tfmgr);
-                if (isa(kobuki.rgbCamListener,'RGBLandmarkEstimator'))
-                    kobuki.rgbCamListener.setLandmarkPositions(world_mat.map_landmark_positions);
-                    kobuki.rgbCamListener.setLandmarkColors(world_mat.map_landmark_colors);
-                    kobuki.rgbCamListener.setLandmarkDiameter(2*0.05); % 10 cm diameter markers
-                elseif (isa(kobuki.rgbCamListener,'RGBLandmarkEstimator_Student'))
+                
+                if (isa(kobuki.rgbCamListener,'RGBLandmarkEstimator') || ...
+                        isa(kobuki.rgbCamListener,'RGBLandmarkEstimator_Student'))
                     kobuki.rgbCamListener.setLandmarkPositions(world_mat.map_landmark_positions);
                     kobuki.rgbCamListener.setLandmarkColors(world_mat.map_landmark_colors);
                     kobuki.rgbCamListener.setLandmarkDiameter(2*0.05); % 10 cm diameter markers
@@ -146,13 +145,12 @@ classdef ROSGUI_Localize < ROSGUI
                 kobuki.rgbCamListener.getCameraInfo();
                 %kobuki.odometryEKF.setTransformer(world_mat.tfmgr);
                 
-                if (isa(kobuki.velocityController,'PurePursuitController_Student'))
-                    disp('Sending waypoints to pure pursuit controller.');
-                    kobuki.velocityController.setWaypoints(world_mat.wayPoints);
-                elseif (isa(kobuki.velocityController,'PurePursuitController'))
+                if (isa(kobuki.velocityController,'PurePursuitController_Student') || ...
+                        isa(kobuki.velocityController,'PurePursuitController'))
                     disp('Sending waypoints to pure pursuit controller.');
                     kobuki.velocityController.setWaypoints(world_mat.wayPoints);
                 end
+                
                 if (~isempty(kobuki.velocityController))
                     kobuki.velocityController.setCallbackRate(0.3, world_mat.tfmgr);
                 end

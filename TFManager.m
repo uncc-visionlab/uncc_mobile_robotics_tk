@@ -69,7 +69,7 @@ classdef TFManager < handle
     end
     
     methods
-        function obj = TFManager()
+        function obj = TFManager(callbackrate_hertz)
             global GAZEBO_SIM;
             obj.tfpub = rospublisher('/tf', 'tf2_msgs/TFMessage');            
             % Create a timer for publishing tf messages
@@ -86,7 +86,8 @@ classdef TFManager < handle
                 obj.setMessage(2,'map', 'odom_truth', [0 0 0], [1 0 0 0]);
                 obj.numTfMsgs=2;
             end
-            obj.tfpubtimer = ExampleHelperROSTimer(0.05, {@obj.ROSTfPubTimer});            
+            time_step = 1/callbackrate_hertz;
+            obj.tfpubtimer = ExampleHelperROSTimer(time_step, {@obj.ROSTfPubTimer});            
             pause(1);
         end
         

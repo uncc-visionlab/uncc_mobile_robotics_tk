@@ -108,10 +108,10 @@ classdef PurePursuitController_Student < OdometryPathRecorder
                 duration = rostime('now')-START_TIME;
                 duration_secs = duration.Sec+duration.Nsec*10^-9;
                 if (duration_secs > 10)
-                    obj.doControl( pose);
+                    obj.doControl( pose, duration_secs);
                 end
             else
-                disp('Could not get map->base_link transform');
+                disp('PurePursuitController_Student::Could not get map->base_link transform');
             end
             if (obj.VISUALIZE_METRICS)
                 if (isempty(actual_path)==0)
@@ -156,12 +156,25 @@ classdef PurePursuitController_Student < OdometryPathRecorder
             end
         end
         
-        function doControl(obj, pose)
+        function doControl(obj, pose, duration_secs)
             currentPos = pose.position(1:2)';
             rpy=PurePursuitController_Student.quat2rpy(pose.qorientation);
             yawAngle = rpy(3);
-            obj.velocityMsg.Angular.Z = 0.1;         % optimal control
-            send(obj.velocityPub, obj.velocityMsg);
+            if (true)
+                obj.velocityMsg.Angular.Z = 0.07;
+                if (duration_secs < 60)
+                    obj.velocityMsg.Linear.X = 0;
+                elseif (duration_secs < 120)
+                    obj.velocityMsg.Linear.X = 0.01;
+                elseif (duration_secs < 180)
+                    obj.velocityMsg.Linear.X = 0.05;
+                elseif (duration_secs < 240)
+                    obj.velocityMsg.Linear.X = 0.05;
+                elseif (duration_secs < 300)
+                    obj.velocityMsg.Linear.X = 0.07;
+                end
+                send(obj.velocityPub, obj.velocityMsg);
+            end
             if (obj.goalPtIdx==0)
                 return;
             end

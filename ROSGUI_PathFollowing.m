@@ -87,14 +87,14 @@ classdef ROSGUI_PathFollowing < ROSGUI
             
             if (ACTIVATE_KOBUKI)
                 GUI.consolePrint('Initializing a ROS TF Transform Tree....');
-                world_mat.tfmgr = TFManager();
+                world_mat.tfmgr = TFManager(3);
                 if (false)
                     velocityPub = rospublisher('/mobile_base/commands/velocity');
                     velocityMsg = rosmessage(obj.velocityPub);
                     veloctiyMsg.Linear.X = 0.1;
                     send(velocityPub, velocityMsg);
                 end
-                kobuki = Kobuki(world_gaz);
+                kobuki = KobukiSim(world_gaz);
                 world_mat.kobuki = kobuki;
                 
                 if (isempty(world_mat.wayPoints) && 1==0)
@@ -119,19 +119,18 @@ classdef ROSGUI_PathFollowing < ROSGUI
                 end
                 % seconds (odometry)
                 %kobuki.odometryListener.setCallbackRate('fastest');
-                kobuki.odometryListener.setCallbackRate(0.1, world_mat.tfmgr);
+                %kobuki.odometryListener.setCallbackRate(0.1, world_mat.tfmgr);
                 kobuki.laserScanListener.setCallbackRate(0.5, world_mat.tfmgr);
                 %kobuki.rgbCamListener.setCallbackRate(4, world_mat.tfmgr);
                 kobuki.rgbCamListener.getCameraInfo();
-                kobuki.odometryEKF.setTransformer(world_mat.tfmgr);
+                %kobuki.odometryEKF.setTransformer(world_mat.tfmgr);
                 
-                if (isa(kobuki.velocityController,'PurePursuitController_Student'))
-                    disp('Sending waypoints to pure pursuit controller.');
-                    kobuki.velocityController.setWaypoints(world_mat.wayPoints);
-                elseif (isa(kobuki.velocityController,'PurePursuitController'))
+                if (isa(kobuki.velocityController,'PurePursuitController_Student') || ...
+                    isa(kobuki.velocityController,'PurePursuitController'))
                     disp('Sending waypoints to pure pursuit controller.');
                     kobuki.velocityController.setWaypoints(world_mat.wayPoints);
                 end
+                
                 if (~isempty(kobuki.velocityController))
                     kobuki.velocityController.setCallbackRate(0.1, world_mat.tfmgr);
                 end

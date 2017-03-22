@@ -24,14 +24,13 @@ classdef RGBCameraListener < handle
         latestImage
         latestPose
         tf_baseNode
+        failedMsgCount
+        MAX_BAD_MSGS
     end
     
     methods (Static)
         function imgRGB = convertRGBImageMessage(imgMsg)
             imgRGB=[];
-            if (prod(size(imgMsg))==0)
-                return;
-            end
             numpixels=length(imgMsg.Data);
             r=imgMsg.Data(1:3:numpixels);
             g=imgMsg.Data(2:3:numpixels);
@@ -44,7 +43,8 @@ classdef RGBCameraListener < handle
         
         function showRGBImage(imgRGB)
             global START_TIME GUI;
-            GUI.setFigure('IMAGE')
+            GUI.setFigure('IMAGE');
+            cla(gca); % clear the axes            
             imshow(imgRGB);
 
             duration = rostime('now')-START_TIME;
@@ -60,6 +60,8 @@ classdef RGBCameraListener < handle
         function obj = RGBCameraListener()
             obj.rgbCamSub = rossubscriber('/camera/rgb/image_raw','BufferSize',1);
             obj.tf_baseNode = 'base_link';
+            obj.failedMsgCount = 0;
+            obj.MAX_BAD_MSGS = 5;
         end
         
         function getCameraInfo(obj) 
@@ -93,6 +95,17 @@ classdef RGBCameraListener < handle
                 rgbCamMessage = varargin{1}.LatestMessage;
                 tfmgr = varargin{2};
             end
+            if (isempty(rgbCamMessage))
+                disp('RGBCameraListener::Skipping empty image message.');                
+                obj.failedMsgCount = obj.failedMsgCount + 1;
+                if (obj.failedMsgCount > obj.MAX_BAD_MSGS)
+                    delete obj;
+                else
+                    return;
+                end
+            else
+                obj.failedMsgCount = 0;
+            end
             if (tfmgr.tftree.canTransform('map', obj.tf_baseNode))
                 tfmgr.tftree.waitForTransform('map', obj.tf_baseNode);
                 map2basetf = tfmgr.tftree.getTransform('map', obj.tf_baseNode);
@@ -107,7 +120,7 @@ classdef RGBCameraListener < handle
                 end                
                 obj.processImage(imgRGB, tfmgr);
             else
-                disp('RGBCameraListener could not get map->base_link transform');
+                disp('RGBCameraListener::Could not get map->base_link transform');
             end
         end
                
