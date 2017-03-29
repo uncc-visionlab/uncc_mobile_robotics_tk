@@ -50,8 +50,8 @@ classdef ROSGUI_Localize < ROSGUI
             %h = GUI.getFigure('ERROR');
             %set(h,'Visible','on');
             
-            %ipaddress = '10.22.77.34';
-            ipaddress = '192.168.11.178';
+            ipaddress = '10.22.32.80';
+            %ipaddress = '192.168.11.178';
             %ipaddress = '192.168.1.10';
             %ipaddress = '10.16.30.11';
             if (robotics.ros.internal.Global.isNodeActive==0)
@@ -143,7 +143,8 @@ classdef ROSGUI_Localize < ROSGUI
                 end
                 kobuki.rgbCamListener.setCallbackRate(4, world_mat.tfmgr);
                 kobuki.rgbCamListener.getCameraInfo();
-                %kobuki.odometryEKF.setTransformer(world_mat.tfmgr);
+                %kobuki.localizationEKF.setTransformer(world_mat.tfmgr);
+                kobuki.localizationEKF.setCallbackRate(1, world_mat.tfmgr);
                 
                 if (isa(kobuki.velocityController,'PurePursuitController_Student') || ...
                         isa(kobuki.velocityController,'PurePursuitController'))
