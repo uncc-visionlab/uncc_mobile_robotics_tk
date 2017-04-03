@@ -6,6 +6,7 @@ classdef RGBLandmarkEstimator_Student < RGBCameraListener
         landmarkPositions
         landmarkColors
         landmarkDiameter
+        landmarkPublisher
     end
     methods (Static)
         function test
@@ -142,8 +143,12 @@ classdef RGBLandmarkEstimator_Student < RGBCameraListener
         function setLandmarkDiameter(obj, diameter)
             obj.landmarkDiameter = diameter;
         end
+        
+        function setPublisher(obj, topic)
+            obj.landmarkPublisher = rospublisher(topic,'geometry_msgs/PointStamped');
+        end
                 
-        function processImage(obj, imgRGB, tfmgr)
+        function processImage(obj, imgRGB, tfmgr, tstamp)
             global GUI;
             RGBCameraListener.showRGBImage(imgRGB);
             [idxs,centers,radii] = RGBLandmarkEstimator_Student.findColoredSpheres( ...
@@ -182,7 +187,16 @@ classdef RGBLandmarkEstimator_Student < RGBCameraListener
                             idx, actual_radius_m, actual_phi*180/pi);
                         fprintf('Landmark %d error (%0.2f m., %0.2f degrees)\n', ...
                             idx, radius_m-actual_radius_m, (phi-actual_phi)*180/pi);
-                    end
+                        if (~isempty(obj.landmarkPublisher))
+                            landmarkMsg = rosmessage(obj.landmarkPublisher);
+                            landmarkMsg.Point.X = actual_radius_m;
+                            landmarkMsg.Point.Y = actual_phi;
+                            landmarkMsg.Point.Z = idx;
+                            landmarkMsg.Header.Stamp = tstamp;
+                            obj.landmarkPublisher.send(landmarkMsg);
+                            disp('landmark published');
+                        end
+                    end                    
                 end
             end
             %obj.saveImageData(imgRGB);            

@@ -8,6 +8,7 @@ classdef EKF_Localization < handle
         ekfTimer
         tf_baseNode
         latestPose
+        landmarkSubscriber
     end
     
     methods
@@ -39,6 +40,20 @@ classdef EKF_Localization < handle
             else
                 disp('RGBCameraListener::Could not get map->base_link transform');
             end
+        end
+        
+        function setLandmarkTopic(obj, topic)
+            obj.landmarkSubscriber = rossubscriber(topic, ...
+                'geometry_msgs/PointStamped', @obj.landmarkCallback);
+        end
+        
+        function landmarkCallback(obj, subscriber, msg)
+            radius_m = msg.Point.X;
+            phi = msg.Point.Y;
+            idx = msg.Point.Z;
+            disp('EKFLocalizer heard a landmark');
+            fprintf('Landmark %d at (Radius,Heading) (%0.2f m., %0.2f degrees)\n', ...
+                            idx, radius_m, phi*180/pi);                        
         end
         
     end

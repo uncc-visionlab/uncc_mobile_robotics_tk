@@ -50,7 +50,7 @@ classdef ROSGUI_Localize < ROSGUI
             %h = GUI.getFigure('ERROR');
             %set(h,'Visible','on');
             
-            ipaddress = '10.22.32.80';
+            ipaddress = '10.22.35.100';
             %ipaddress = '192.168.11.178';
             %ipaddress = '192.168.1.10';
             %ipaddress = '10.16.30.11';
@@ -140,11 +140,14 @@ classdef ROSGUI_Localize < ROSGUI
                     kobuki.rgbCamListener.setLandmarkPositions(world_mat.map_landmark_positions);
                     kobuki.rgbCamListener.setLandmarkColors(world_mat.map_landmark_colors);
                     kobuki.rgbCamListener.setLandmarkDiameter(2*0.05); % 10 cm diameter markers
+                    kobuki.rgbCamListener.setPublisher('landmarks');
                 end
                 kobuki.rgbCamListener.setCallbackRate(4, world_mat.tfmgr);
                 kobuki.rgbCamListener.getCameraInfo();
+
                 %kobuki.localizationEKF.setTransformer(world_mat.tfmgr);
                 kobuki.localizationEKF.setCallbackRate(1, world_mat.tfmgr);
+                kobuki.localizationEKF.setLandmarkTopic('landmarks');
                 
                 if (isa(kobuki.velocityController,'PurePursuitController_Student') || ...
                         isa(kobuki.velocityController,'PurePursuitController'))
