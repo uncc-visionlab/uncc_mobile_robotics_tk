@@ -18,8 +18,8 @@ classdef StateRenderer_Gaussian < StateRenderer
             position=[0 0 0];
             qorientation=[1 0 0 0];
             covariance=zeros(3,3);
-            covariance(1,1) = 4;
-            covariance(2,2) = 1;
+            covariance(1,1) = .7;
+            covariance(2,2) = .3;
             theta = -pi/4;
             R=[cos(theta) -sin(theta) 0; sin(theta) cos(theta) 0; 0 0 1];
             covariance = R'*covariance*R;
@@ -50,7 +50,7 @@ classdef StateRenderer_Gaussian < StateRenderer
             % draw 2-sigma uncertainty ellipse
             xy_cov = [covariance(1,1) covariance(1,2); ...
                 covariance(2,1) covariance(2,2)];
-            [evecs, evals] = eig(xy_cov)
+            [evecs, evals] = eig(xy_cov);
             x = obj.ellipsePolyPoints(1,:)*2*sqrt(evals(1,1));
             y = obj.ellipsePolyPoints(2,:)*2*sqrt(evals(2,2));
             GUI.setFigure('MAP');

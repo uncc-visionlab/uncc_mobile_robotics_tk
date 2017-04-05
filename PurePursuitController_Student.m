@@ -162,7 +162,7 @@ classdef PurePursuitController_Student < OdometryPathRecorder
             yawAngle = rpy(3);
             if (true)
                 obj.velocityMsg.Angular.Z = 0.07;
-                if (duration_secs < 60)
+                if (duration_secs < 20)
                     obj.velocityMsg.Linear.X = 0;
                 elseif (duration_secs < 120)
                     obj.velocityMsg.Linear.X = 0.01;

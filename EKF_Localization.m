@@ -25,15 +25,22 @@ classdef EKF_Localization < handle
         
         update_state
         update_state_cov
+        
+        M_t = [0.5 0; 0 0.5];
+        Q_t = [.2 0 0; 0 0.8*pi/180 0; 0 0 0];
     end
     
     methods
         function obj = EKF_Localization()
             obj.prior_mean=[0 0 0]';
             obj.prior_covariance=zeros(3,3);
-            obj.prior_covariance(1,1) = 4;
-            obj.prior_covariance(2,2) = 1.5;
-            obj.prior_covariance(2,2) = 0.5;
+            obj.prior_covariance(1,1) = .7;
+            obj.prior_covariance(2,2) = .3;
+            obj.prior_covariance(3,3) = 0.05;
+
+            obj.pred_state = obj.prior_mean;
+            obj.pred_state_cov = obj.prior_covariance;
+            
             obj.tf_baseNode = 'base_link_truth';
 
             obj.loc_tform = rosmessage('geometry_msgs/TransformStamped');
@@ -70,10 +77,10 @@ classdef EKF_Localization < handle
 %             else
 %                 disp('RGBCameraListener::Could not get map->base_link transform');
 %             end
-
+            
             time_cur = rostime('now');
-            obj.pred_state = obj.prior_mean;
-            obj.pred_state_cov = obj.prior_covariance;
+            %obj.pred_state = obj.prior_mean;
+            %obj.pred_state_cov = obj.prior_covariance;
             obj.loc_position = [obj.pred_state(1) obj.pred_state(2) 0];
             obj.loc_qorientation = QuatLib.rpy2quat([0 0 obj.pred_state(3)]);
             if (~isempty(time_prev))
@@ -83,7 +90,7 @@ classdef EKF_Localization < handle
                 %disp('OdomPropagation published odom->base_link transform to tf');
                 tfmgr.tftree.sendTransform(obj.loc_tform);
                 obj.loc_stateRenderer.showState(obj.loc_position, ...
-                    obj.loc_qorientation);
+                    obj.loc_qorientation, obj.pred_state_cov(1:2,1:2));
             end
             time_prev = time_cur;            
         end
@@ -94,12 +101,36 @@ classdef EKF_Localization < handle
         end
         
         function controlInputCallback(obj, subscriber, msg)
+            persistent time_prev;            
+            if (isempty(time_prev))
+                time_prev = rostime('now');                
+            end
             lin_vel = msg.Linear.X;
-            ang_vel = msg.Angular.X;
-            input_time = rostime('now');
-            disp('EKFLocalizer heard a control signal');
+            ang_vel = msg.Angular.Z;
+            time_cur = rostime('now');
+            duration = time_cur-time_prev;
+            deltaT = duration.Sec+duration.Nsec*10^-9;
+            
+            v_t = lin_vel;
+            w_t = ang_vel;
+            theta = obj.pred_state(3);
+            radius = v_t/w_t;
+            
+            motion = deltaT*[v_t*cos(theta); v_t*sin(theta); w_t];
+            
+%             motion = [-radius*sin(theta)+radius*sin(theta+w_t*deltaT); ...
+%                 radius*cos(theta)-radius*cos(theta+w_t*deltaT); ...
+%                 w_t*deltaT];
+
+            obj.pred_state = obj.pred_state + motion;
+            
+            time_prev = time_cur;
             fprintf('Control signal is (Linear,Angular)  velocity (%0.2f m., %0.2f degrees)/sec\n', ...
-                            lin_vel, ang_vel*180/pi);                        
+                            lin_vel, ang_vel*180/pi);                   
+            fprintf('Motion is (x,y,theta) (%0.2f m., %0.2f m., %0.2f degrees)\n', ...
+                            motion(1), motion(2), motion(3)*180/pi);                   
+            fprintf('Duration is %0.2f sec.\n', ...
+                            deltaT);                        
         end
         
         function setLandmarkTopic(obj, topic)
