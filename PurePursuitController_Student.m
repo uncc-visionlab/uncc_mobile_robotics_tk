@@ -173,7 +173,9 @@ classdef PurePursuitController_Student < OdometryPathRecorder
                 elseif (duration_secs < 300)
                     obj.velocityMsg.Linear.X = 0.07;
                 end
-                send(obj.velocityPub, obj.velocityMsg);
+                if (obj.velocityMsg.Linear.X > 0)
+                    send(obj.velocityPub, obj.velocityMsg);
+                end
             end
             if (obj.goalPtIdx==0)
                 return;

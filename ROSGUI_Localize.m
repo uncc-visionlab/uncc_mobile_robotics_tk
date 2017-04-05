@@ -50,10 +50,10 @@ classdef ROSGUI_Localize < ROSGUI
             %h = GUI.getFigure('ERROR');
             %set(h,'Visible','on');
             
-            ipaddress = '10.22.35.100';
+            %ipaddress = '10.16.30.9';
             %ipaddress = '192.168.11.178';
             %ipaddress = '192.168.1.10';
-            %ipaddress = '10.16.30.11';
+            ipaddress = '10.22.94.253';
             if (robotics.ros.internal.Global.isNodeActive==0)
                 GUI.consolePrint(strcat(...
                     'Initializing ROS node with master IP .... ', ...
@@ -148,6 +148,8 @@ classdef ROSGUI_Localize < ROSGUI
                 %kobuki.localizationEKF.setTransformer(world_mat.tfmgr);
                 kobuki.localizationEKF.setCallbackRate(1, world_mat.tfmgr);
                 kobuki.localizationEKF.setLandmarkTopic('landmarks');
+                kobuki.localizationEKF.setControlInputTopic('/mobile_base/commands/velocity');
+                kobuki.localizationEKF.setLandmarkPositions(world_mat.map_landmark_positions);
                 
                 if (isa(kobuki.velocityController,'PurePursuitController_Student') || ...
                         isa(kobuki.velocityController,'PurePursuitController'))
