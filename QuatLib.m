@@ -55,18 +55,58 @@ classdef QuatLib
                 -sp, cp*sr, cp*cr];
         end
         
-        function quat = mat2quat(mat)
+        function q = mat2quat(mat)
+            % MAT2QUAT - Convert a 3x3 rotation matrix to a quaternion
+            %
+            
             %quat = rotm2quat(mat);
-            if all(diag(mat) == ones(3,1))
-                quat = [1 0 0 0];
-                return
+            Quat=zeros(4,1);
+            
+            %Compute absolute values of the four quaternions from diags of Eqn 12-13
+            %absQ=0.5*sqrt([1 -1 -1;-1 1 -1;-1 -1 1;1 1 1]*diag(mat)+1);
+            
+            absQ(1,:) = 0.5 * sqrt(1+mat(1,1,:)+mat(2,2,:)+mat(3,3,:));
+            absQ(2,:) = 0.5 * sqrt(1-mat(1,1,:)-mat(2,2,:)+mat(3,3,:));
+            absQ(3,:) = 0.5 * sqrt(1+mat(1,1,:)-mat(2,2,:)-mat(3,3,:));
+            absQ(4,:) = 0.5 * sqrt(1-mat(1,1,:)+mat(2,2,:)-mat(3,3,:));
+            
+            [~,ind]=max(absQ); % Select biggest for best accuracy
+            
+            qind = ind == 1;
+            if any(qind)
+                Quat(1,qind)=absQ(1,qind);
+                Quat(2,qind)=squeeze((mat(2,3,qind)-mat(3,2,qind))).'.*0.25./absQ(1,qind);
+                Quat(3,qind)=squeeze((mat(3,1,qind)-mat(1,3,qind))).'.*0.25./absQ(1,qind);
+                Quat(4,qind)=squeeze((mat(1,2,qind)-mat(2,1,qind))).'.*0.25./absQ(1,qind);
             end
-            % Angle
-            phi = acos((trace(mat)-1)/2);
-            % Axis
-            x = [mat(3,2)-mat(2,3) mat(1,3)-mat(3,1) mat(2,1)-mat(1,2)];
-            x = x/sqrt(x*x');
-            quat = [ cos(phi/2) sin(phi/2)*x];
+            
+            qind = ind == 2;
+            if any(qind)
+                Quat(1,qind)=squeeze(mat(1,2,qind)-mat(2,1,qind)).'.*0.25./absQ(2,qind);
+                Quat(2,qind)=squeeze(mat(3,1,qind)+mat(1,3,qind)).'.*0.25./absQ(2,qind);
+                Quat(3,qind)=squeeze(mat(3,2,qind)+mat(2,3,qind)).'.*0.25./absQ(2,qind);
+                Quat(4,qind)=absQ(2,qind);
+            end
+            
+            qind = ind == 3;
+            if any(qind)
+                Quat(1,qind)=squeeze(mat(2,3,qind)-mat(3,2,qind)).'.*0.25./absQ(3,qind);
+                Quat(2,qind)=absQ(3,qind);
+                Quat(3,qind)=squeeze(mat(1,2,qind)+mat(2,1,qind)).'.*0.25./absQ(3,qind);
+                Quat(4,qind)=squeeze(mat(3,1,qind)+mat(1,3,qind)).'.*0.25./absQ(3,qind);
+            end
+            
+            qind = ind == 4;
+            if any(qind)
+                Quat(1,qind)=squeeze(mat(3,1,qind)-mat(1,3,qind)).'.*0.25./absQ(4,qind);
+                Quat(2,qind)=squeeze(mat(1,2,qind)+mat(2,1,qind)).'.*0.25./absQ(4,qind);
+                Quat(3,qind)=absQ(4,qind);
+                Quat(4,qind)=squeeze(mat(2,3,qind)+mat(3,2,qind)).'.*0.25./absQ(4,qind);
+            end
+            
+            q = real(Quat);
+            q = q./norm(q);
+            q = q';
         end
         
         function rpy = mat2rpy(mat)
