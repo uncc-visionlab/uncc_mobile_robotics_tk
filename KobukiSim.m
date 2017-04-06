@@ -50,7 +50,8 @@ classdef KobukiSim < ExampleHelperGazeboSpawnedModel
             obj.velocityController = PurePursuitController_Student(obj);
 
             %obj.localizationEKF = OdomEstimationNode(true, true, false, false);
-            obj.localizationEKF = EKF_Localization();
+            %obj.localizationEKF = EKF_Localization();
+            obj.localizationEKF = EKF_Localization_Student();            
         end
                         
         function sendVelocityCommand(kobuki, velocityMsg)
