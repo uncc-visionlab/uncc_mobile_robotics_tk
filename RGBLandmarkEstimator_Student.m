@@ -7,6 +7,7 @@ classdef RGBLandmarkEstimator_Student < RGBCameraListener
         landmarkColors
         landmarkDiameter
         landmarkPublisher
+        VERBOSE
     end
     methods (Static)
         function test
@@ -130,6 +131,7 @@ classdef RGBLandmarkEstimator_Student < RGBCameraListener
     methods
         function obj = RGBLandmarkEstimator_Student()
             obj@RGBCameraListener();
+            obj.VERBOSE=true;
         end
         
         function setLandmarkColors(obj, landmarkColors)
@@ -167,8 +169,10 @@ classdef RGBLandmarkEstimator_Student < RGBCameraListener
                     physical_diameter_m = obj.landmarkDiameter;
                     phi = 0;
                     radius_m = 0;
-                    fprintf('Landmark %d detected at (Radius,Heading) (%0.2f m., %0.2f degrees)\n', ...
-                        idx, radius_m, phi*180/pi);
+                    if (obj.VERBOSE)
+                        fprintf('RGBLandmarkEstimator::Landmark %d detected at (Radius,Heading) (%0.2f m., %0.2f degrees)\n', ...
+                            idx, radius_m, phi*180/pi);
+                    end
                     if (tfmgr.tftree.canTransform('map', 'base_link_truth'))
                         tfmgr.tftree.waitForTransform('map', 'base_link_truth');
                         map2basetf = tfmgr.tftree.getTransform('map', 'base_link_truth');
@@ -181,12 +185,14 @@ classdef RGBLandmarkEstimator_Student < RGBCameraListener
                         %fprintf('State is (%0.2f,%0.2f,%0.2f)\n', ...
                         %    tVal.X, tVal.Y, yawAngle*180/pi);
                         landmarkPos = obj.landmarkPositions(idx,:);
-                        actual_phi = atan2(landmarkPos(2)-tVal.Y, landmarkPos(1)-tVal.X) - yawAngle;
+                        actual_phi = angdiff(yawAngle, atan2(landmarkPos(2)-tVal.Y, landmarkPos(1)-tVal.X));
                         actual_radius_m = norm(landmarkPos-[tVal.X, tVal.Y]);
-                        fprintf('Landmark %d actually at (Radius,Heading) (%0.2f m., %0.2f degrees)\n', ...
-                            idx, actual_radius_m, actual_phi*180/pi);
-                        fprintf('Landmark %d error (%0.2f m., %0.2f degrees)\n', ...
-                            idx, radius_m-actual_radius_m, (phi-actual_phi)*180/pi);
+                        if (obj.VERBOSE)
+                            fprintf('RGBLandmarkEstimator::Landmark %d actually at (Radius,Heading) (%0.2f m., %0.2f degrees)\n', ...
+                                idx, actual_radius_m, actual_phi*180/pi);
+                            fprintf('RGBLandmarkEstimator::Landmark %d error (%0.2f m., %0.2f degrees)\n', ...
+                                idx, radius_m-actual_radius_m, (phi-actual_phi)*180/pi);
+                        end
                         if (~isempty(obj.landmarkPublisher))
                             landmarkMsg = rosmessage(obj.landmarkPublisher);
                             landmarkMsg.Point.X = actual_radius_m;
@@ -194,9 +200,9 @@ classdef RGBLandmarkEstimator_Student < RGBCameraListener
                             landmarkMsg.Point.Z = idx;
                             landmarkMsg.Header.Stamp = tstamp;
                             obj.landmarkPublisher.send(landmarkMsg);
-                            disp('landmark published');
+                            disp('RGBLandmarkEstimator::Landmark published');
                         end
-                    end                    
+                    end
                 end
             end
             %obj.saveImageData(imgRGB);            

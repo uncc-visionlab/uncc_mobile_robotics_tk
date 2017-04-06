@@ -138,6 +138,7 @@ classdef OdometryListener < handle
             if (obj.hasStateProvider)
                 [position, orientation, velocity] = obj.stateProvider.getState();
                 obj.actual_qorientation = eul2quat(orientation*pi/180,'ZYX');
+                %obj.actual_qorientation = QuatLib.rpy2quat(orientation*pi/180);
                 obj.actual_position = position;
                 obj.actual_tform = TFManager.populateTransformStamped( ...
                     obj.actual_tform, ...

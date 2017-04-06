@@ -176,6 +176,7 @@ classdef PurePursuitController_Student < OdometryPathRecorder
                 if (obj.velocityMsg.Linear.X > 0)
                     send(obj.velocityPub, obj.velocityMsg);
                 end
+                return;
             end
             if (obj.goalPtIdx==0)
                 return;

@@ -61,7 +61,7 @@ classdef RGBCameraListener < handle
             obj.rgbCamSub = rossubscriber('/camera/rgb/image_raw','BufferSize',1);
             obj.tf_baseNode = 'base_link';
             obj.failedMsgCount = 0;
-            obj.MAX_BAD_MSGS = 5;
+            obj.MAX_BAD_MSGS = 3;
         end
         
         function getCameraInfo(obj) 
