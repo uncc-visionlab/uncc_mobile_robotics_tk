@@ -69,6 +69,10 @@ classdef OdometryListener < handle
             obj.MAX_BAD_MSGS = 10;            
         end
         
+        function setOdometryTopic(obj, topic)
+            obj.odometrySub = rossubscriber(topic,'BufferSize',1);
+        end
+        
         function setCallbackRate(obj, rate, tfmgr)
             if (strcmpi(rate,'fastest')==1)
                 obj.odometrySub.NewMessageFcn = ...

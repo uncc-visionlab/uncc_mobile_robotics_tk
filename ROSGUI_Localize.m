@@ -47,11 +47,11 @@ classdef ROSGUI_Localize < ROSGUI
             set(h,'Visible','on');
             h = GUI.getFigure('IMAGE');
             set(h,'Visible','on');
-            %h = GUI.getFigure('ERROR');
-            %set(h,'Visible','on');
+            h = GUI.getFigure('ERROR');
+            set(h,'Visible','on');
             
-            ipaddress = '10.16.30.11';
-            %ipaddress = '192.168.11.178';
+            %ipaddress = '10.16.30.11';
+            ipaddress = '192.168.11.178';
             %ipaddress = '192.168.1.10';
             %ipaddress = '10.22.94.253';
             if (robotics.ros.internal.Global.isNodeActive==0)
@@ -150,6 +150,11 @@ classdef ROSGUI_Localize < ROSGUI
                 kobuki.localizationEKF.setLandmarkTopic('landmarks');
                 kobuki.localizationEKF.setControlInputTopic('/mobile_base/commands/velocity');
                 kobuki.localizationEKF.setLandmarkPositions(world_mat.map_landmark_positions);
+                
+                if (isa(kobuki.velocityController,'OdometryListener'))
+                    kobuki.velocityController.setOdometryTopic('ekf_loc')
+                    kobuki.velocityController.maxLinearVelocity = 0.1;
+                end
                 
                 if (isa(kobuki.velocityController,'PurePursuitController_Student') || ...
                         isa(kobuki.velocityController,'PurePursuitController'))

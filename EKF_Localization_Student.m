@@ -16,7 +16,10 @@ classdef EKF_Localization_Student < handle
         VERBOSE
         
         inputSubscriber
-        
+
+        localizationPublisher
+        localization_odomMsg
+
         loc_tform % TransformStamped
         loc_position
         loc_qorientation
@@ -24,9 +27,6 @@ classdef EKF_Localization_Student < handle
 
         pred_state
         pred_state_cov
-        
-        update_state
-        update_state_cov
         
         M_t = [0.25 0; 0 0.25];
         Q_t = [0.2 0 0; 0 0.8*pi/180 0; 0 0 1];
@@ -49,6 +49,10 @@ classdef EKF_Localization_Student < handle
             obj.loc_tform.ChildFrameId = 'loc_base_link';
             obj.loc_tform.Header.FrameId = 'map';
            
+            obj.localizationPublisher = rospublisher('ekf_loc', ...
+                'nav_msgs/Odometry');
+            obj.localization_odomMsg = rosmessage(obj.localizationPublisher);
+            
             obj.loc_stateRenderer = StateRenderer_Gaussian(); % draws odometry state estimate
             obj.loc_stateRenderer.body_color = [0.1 0.4 0.4];
             obj.loc_stateRenderer.arrow_color = [0.1 0.6 0.6];
@@ -77,6 +81,15 @@ classdef EKF_Localization_Student < handle
                     obj.loc_qorientation, time_cur);                    
                 %disp('EKFLocalization::published odom->base_link transform to tf');
                 tfmgr.tftree.sendTransform(obj.loc_tform);
+                obj.localization_odomMsg.Header.Stamp = time_cur;
+                obj.localization_odomMsg.Pose.Pose.Position.X = obj.loc_position(1);
+                obj.localization_odomMsg.Pose.Pose.Position.Y = obj.loc_position(2);
+                obj.localization_odomMsg.Pose.Pose.Position.Z = obj.loc_position(3);
+                obj.localization_odomMsg.Pose.Pose.Orientation.W = obj.loc_qorientation(1);
+                obj.localization_odomMsg.Pose.Pose.Orientation.X = obj.loc_qorientation(2);
+                obj.localization_odomMsg.Pose.Pose.Orientation.Y = obj.loc_qorientation(3);
+                obj.localization_odomMsg.Pose.Pose.Orientation.Z = obj.loc_qorientation(4);                
+                obj.localizationPublisher.send(obj.localization_odomMsg);                
                 obj.loc_stateRenderer.showState(obj.loc_position, ...
                     obj.loc_qorientation, obj.pred_state_cov(1:2,1:2));
             end
