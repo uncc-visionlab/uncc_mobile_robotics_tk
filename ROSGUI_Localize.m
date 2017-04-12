@@ -51,9 +51,9 @@ classdef ROSGUI_Localize < ROSGUI
             set(h,'Visible','on');
             
             %ipaddress = '10.16.30.11';
-            ipaddress = '192.168.11.178';
+            %ipaddress = '192.168.11.178';
             %ipaddress = '192.168.1.10';
-            %ipaddress = '10.22.94.253';
+            ipaddress = '10.22.37.212';
             if (robotics.ros.internal.Global.isNodeActive==0)
                 GUI.consolePrint(strcat(...
                     'Initializing ROS node with master IP .... ', ...
@@ -160,6 +160,7 @@ classdef ROSGUI_Localize < ROSGUI
                         isa(kobuki.velocityController,'PurePursuitController'))
                     disp('Sending waypoints to pure pursuit controller.');
                     kobuki.velocityController.setWaypoints(world_mat.wayPoints);
+                    kobuki.velocityController.setPoseFrame('loc_base_link');
                 end
                 
                 if (~isempty(kobuki.velocityController))

@@ -34,6 +34,8 @@ classdef PurePursuitController_Student < OdometryPathRecorder
         lookaheadDistance
         goalRadius
         
+        tfPoseFrame
+        
         VISUALIZE_ALGORITHM
         VISUALIZE_METRICS
     end
@@ -86,6 +88,7 @@ classdef PurePursuitController_Student < OdometryPathRecorder
             obj.goalPtIdx = 0;
             obj.VISUALIZE_ALGORITHM = false;
             obj.VISUALIZE_METRICS = true;
+            obj.tfPoseFrame = 'base_link'; % use odometry for pose
         end
         
         function odometryCallback(obj, varargin)
@@ -98,9 +101,9 @@ classdef PurePursuitController_Student < OdometryPathRecorder
                 tfmgr = varargin{2};
             end
             obj.odometryCallback@OdometryPathRecorder(varargin{:});
-            if (tfmgr.tftree.canTransform('map', 'base_link'))
-                tfmgr.tftree.waitForTransform('map', 'base_link');
-                map2basetf = tfmgr.tftree.getTransform('map', 'base_link');
+            if (tfmgr.tftree.canTransform('map', obj.tfPoseFrame))
+                tfmgr.tftree.waitForTransform('map', obj.tfPoseFrame);
+                map2basetf = tfmgr.tftree.getTransform('map', obj.tfPoseFrame);
                 tVal = map2basetf.Transform.Translation;
                 qVal = map2basetf.Transform.Rotation;
                 pose = LocalPose([tVal.X tVal.Y tVal.Z], ...
@@ -144,6 +147,10 @@ classdef PurePursuitController_Student < OdometryPathRecorder
                     xlabel(xlabelstr);
                 end
             end
+        end
+        
+        function setPoseFrame(obj, frame_name)
+            obj.tfPoseFrame = frame_name;
         end
         
         function setWaypoints(obj, waypoints)
