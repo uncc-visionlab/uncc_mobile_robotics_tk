@@ -140,7 +140,7 @@ classdef EKF_Localization_Student < handle
         
         function setLandmarkTopic(obj, topic)
             obj.landmarkSubscriber = rossubscriber(topic, ...
-                'geometry_msgs/PointStamped', @obj.landmarkCallback);
+                'sensor_msgs/PointCloud', @obj.landmarkCallback);
         end
         
         function setLandmarkPositions(obj, landmarkPositions)
@@ -148,12 +148,17 @@ classdef EKF_Localization_Student < handle
         end
         
         function landmarkCallback(obj, subscriber, msg)
-            radius_m = msg.Point.X;
-            phi = msg.Point.Y;
-            idx = msg.Point.Z;
-           
-            %landmark_time = msg.Header.Stamp;
+            %msg.Channels(1).Name = 'measurement';
+            radius_m = msg.Channels(1).Values(1);
+            phi = msg.Channels(1).Values(2);
+            %msg.Channels(2).Name = 'index';
+            idx = msg.Channels(2).Values(1);
+            %msg.Channels(3).Name = 'signature';
+            signature = msg.Channels(3).Values;          
+            %landmark_time = msg.Header.Stamp;           
+
             z=[radius_m; phi; 0];
+            
             m_xy = obj.landmarkPositions(idx,:)';
             pred_loc_to_landmark_vec = m_xy - obj.pred_state(1:2);
             pred_theta = obj.pred_state(3);

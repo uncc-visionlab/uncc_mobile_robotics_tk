@@ -44,13 +44,14 @@ classdef RGBLandmarkEstimator_Student < RGBCameraListener
             aaa=1
         end
         
-        function [idxs, centers, radii] = findColoredSpheres(img_rgb, landmark_colors)
+        function [idxs, centers, radii, signatures] = findColoredSpheres(img_rgb, landmark_colors)
             num_colors = size(landmark_colors,1);
             row_start = 150;
             row_end = 300;
             idxs=[];
             centers=[];
             radii=[];
+            signatures=[];            
             if (1==0)
                 [centers, radii] = imfindcircles(img_rgb,[7 15], ...
                     'ObjectPolarity','bright', 'Sensitivity',0.9);
@@ -121,6 +122,7 @@ classdef RGBLandmarkEstimator_Student < RGBCameraListener
                        radius = 2*sqrt(max(eigVals));
                        idxs=[idxs; labelVal];
                        centers=[centers; xy_center+[0,row_start-1]];
+                       signatures=[signatures; landmark_colors(labelVal,:)];                       
                        radii=[radii; radius];
                     end
                 end
@@ -147,19 +149,20 @@ classdef RGBLandmarkEstimator_Student < RGBCameraListener
         end
         
         function setPublisher(obj, topic)
-            obj.landmarkPublisher = rospublisher(topic,'geometry_msgs/PointStamped');
+            obj.landmarkPublisher = rospublisher(topic,'sensor_msgs/PointCloud');
         end
                 
         function processImage(obj, imgRGB, tfmgr, tstamp)
             global GUI;
             RGBCameraListener.showRGBImage(imgRGB);
-            [idxs,centers,radii] = RGBLandmarkEstimator_Student.findColoredSpheres( ...
+            [idxs,centers,radii,signatures] = RGBLandmarkEstimator_Student.findColoredSpheres( ...
                 imgRGB, obj.landmarkColors);
             GUI.setFigure('IMAGE')
             for lidx=1:length(idxs)
                 idx=idxs(lidx);
                 xy_center = centers(lidx,:);
                 radius = radii(lidx);
+                signature = signatures(lidx,:);                
                 [x,y]=StateRenderer.makeCircle(radius, 10, xy_center);
                 hold on, plot(x,y,'Color', obj.landmarkColors(idx,:), ...
                     'LineWidth', 0.5);                
@@ -169,6 +172,9 @@ classdef RGBLandmarkEstimator_Student < RGBCameraListener
                     physical_diameter_m = obj.landmarkDiameter;
                     phi = 0;
                     radius_m = 0;
+                    half_subtended_angle = atan2(radius,focal_lengths(1));
+                    correction =  abs((physical_diameter_m/2)*sin(half_subtended_angle));
+                    radius_m = radius_m + correction;
                     if (obj.VERBOSE)
                         fprintf('RGBLandmarkEstimator::Landmark %d detected at (Radius,Heading) (%0.2f m., %0.2f degrees)\n', ...
                             idx, radius_m, phi*180/pi);
@@ -195,9 +201,15 @@ classdef RGBLandmarkEstimator_Student < RGBCameraListener
                         end
                         if (~isempty(obj.landmarkPublisher))
                             landmarkMsg = rosmessage(obj.landmarkPublisher);
-                            landmarkMsg.Point.X = actual_radius_m;
-                            landmarkMsg.Point.Y = actual_phi;
-                            landmarkMsg.Point.Z = idx;
+                            landmarkMsg.Channels(1) = rosmessage('sensor_msgs/ChannelFloat32');
+                            landmarkMsg.Channels(2) = rosmessage('sensor_msgs/ChannelFloat32');
+                            landmarkMsg.Channels(3) = rosmessage('sensor_msgs/ChannelFloat32');
+                            landmarkMsg.Channels(1).Name = 'measurement';
+                            landmarkMsg.Channels(1).Values = single([actual_radius_m, actual_phi]);
+                            landmarkMsg.Channels(2).Name = 'index';
+                            landmarkMsg.Channels(2).Values = idx;
+                            landmarkMsg.Channels(3).Name = 'signature';
+                            landmarkMsg.Channels(3).Values = signature;
                             landmarkMsg.Header.Stamp = tstamp;
                             obj.landmarkPublisher.send(landmarkMsg);
                             disp('RGBLandmarkEstimator::Landmark published');
