@@ -35,6 +35,7 @@ classdef PurePursuitController_Student < OdometryPathRecorder
         goalRadius
         
         tfPoseFrame
+        dir
         
         VISUALIZE_ALGORITHM
         VISUALIZE_METRICS
@@ -89,6 +90,7 @@ classdef PurePursuitController_Student < OdometryPathRecorder
             obj.VISUALIZE_ALGORITHM = false;
             obj.VISUALIZE_METRICS = true;
             obj.tfPoseFrame = 'base_link'; % use odometry for pose
+            obj.dir=1;
         end
         
         function odometryCallback(obj, varargin)
@@ -164,10 +166,21 @@ classdef PurePursuitController_Student < OdometryPathRecorder
         end
         
         function doControl(obj, pose, duration_secs)
+            
             currentPos = pose.position(1:2)';
             rpy=PurePursuitController_Student.quat2rpy(pose.qorientation);
             yawAngle = rpy(3);
-            if (true)
+            if (true)                
+                obj.velocityMsg.Linear.X = 0.0;
+                if (mod(floor(duration_secs/30),2)==0)
+                    obj.velocityMsg.Angular.Z = 0.07;
+                else
+                    obj.velocityMsg.Angular.Z = -0.07;
+                end
+                send(obj.velocityPub, obj.velocityMsg);
+                return;
+            end
+            if (false)
                 obj.velocityMsg.Angular.Z = 0.07;
                 if (duration_secs < 20)
                     obj.velocityMsg.Linear.X = 0;

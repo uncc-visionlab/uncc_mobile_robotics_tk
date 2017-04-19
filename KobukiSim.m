@@ -51,7 +51,8 @@ classdef KobukiSim < ExampleHelperGazeboSpawnedModel
 
             %obj.localizationEKF = OdomEstimationNode(true, true, false, false);
             %obj.localizationEKF = EKF_Localization();
-            obj.localizationEKF = EKF_Localization_Student();            
+            %obj.localizationEKF = EKF_Localization_Student();            
+            obj.localizationEKF = EKF_SLAM_Student();            
         end
                         
         function sendVelocityCommand(kobuki, velocityMsg)
