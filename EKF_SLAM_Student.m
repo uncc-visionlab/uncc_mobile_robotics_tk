@@ -11,6 +11,7 @@ classdef EKF_SLAM_Student < handle
         latestPose
         
         landmarkSubscriber
+        numLandmarks
         
         VERBOSE
         
@@ -57,6 +58,7 @@ classdef EKF_SLAM_Student < handle
             obj.loc_stateRenderer.arrow_color = [0.1 0.6 0.6];
             
             obj.VERBOSE = false;
+            obj.numLandmarks = 0;
         end
         
         function setCallbackRate(obj, rate, tfmgr)
@@ -191,13 +193,14 @@ classdef EKF_SLAM_Student < handle
             % estimate the correspondence for a detected landmark
             % compute the log-likelihood of the observation given the
             % assumption that the observation is an existing landmark
-            log_likelihood=ones(num_landmarks,1);
+            log_likelihood=ones(obj.numLandmarks,1);
             idx = find(log_likelihood == min(log_likelihood));
             min_log_likelihood = log_likelihood(idx);
             if (min_log_likelihood < THRESHOLD)
                 new_landmark = false;
                 return;
             else
+                obj.numLandmarks = obj.numLandmarks + 1;
                 return;
             end
         end
