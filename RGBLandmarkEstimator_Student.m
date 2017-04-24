@@ -133,7 +133,7 @@ classdef RGBLandmarkEstimator_Student < RGBCameraListener
     methods
         function obj = RGBLandmarkEstimator_Student()
             obj@RGBCameraListener();
-            obj.VERBOSE=true;
+            obj.VERBOSE = true;
         end
         
         function setLandmarkColors(obj, landmarkColors)
@@ -158,6 +158,14 @@ classdef RGBLandmarkEstimator_Student < RGBCameraListener
             [idxs,centers,radii,signatures] = RGBLandmarkEstimator_Student.findColoredSpheres( ...
                 imgRGB, obj.landmarkColors);
             GUI.setFigure('IMAGE')
+            time_cur = rostime('now');
+            duration = time_cur-tstamp;
+            deltaT = duration.Sec+duration.Nsec*10^-9;
+            if (deltaT > 0.5)
+                fprintf(1,'RGBLandmarkEstimator:Skipping landmark message from %0.2f secs in the past\n', deltaT);
+                return;
+            end
+            
             for lidx=1:length(idxs)
                 idx=idxs(lidx);
                 xy_center = centers(lidx,:);
@@ -176,8 +184,8 @@ classdef RGBLandmarkEstimator_Student < RGBCameraListener
                     correction =  abs((physical_diameter_m/2)*sin(half_subtended_angle));
                     radius_m = radius_m + correction;
                     if (obj.VERBOSE)
-                        fprintf('RGBLandmarkEstimator::Landmark %d detected at (Radius,Heading) (%0.2f m., %0.2f degrees)\n', ...
-                            idx, radius_m, phi*180/pi);
+                        fprintf('RGBLandmarkEstimator::Landmark detected: index %d, color (%d,%d,%d), (Radius,Heading) (%0.2f m., %0.2f degrees)\n', ...
+                            idx, signature(1), signature(2), signature(3), radius_m, phi*180/pi);
                     end
                     if (tfmgr.tftree.canTransform('map', 'base_link_truth'))
                         tfmgr.tftree.waitForTransform('map', 'base_link_truth');
@@ -196,7 +204,7 @@ classdef RGBLandmarkEstimator_Student < RGBCameraListener
                         if (obj.VERBOSE)
                             fprintf('RGBLandmarkEstimator::Landmark %d actually at (Radius,Heading) (%0.2f m., %0.2f degrees)\n', ...
                                 idx, actual_radius_m, actual_phi*180/pi);
-                            fprintf('RGBLandmarkEstimator::Landmark %d error (%0.2f m., %0.2f degrees)\n', ...
+                            fprintf('RGBLandmarkEstimator::Landmark %d position error (%0.2f m., %0.2f degrees)\n', ...
                                 idx, radius_m-actual_radius_m, (phi-actual_phi)*180/pi);
                         end
                         if (~isempty(obj.landmarkPublisher))
