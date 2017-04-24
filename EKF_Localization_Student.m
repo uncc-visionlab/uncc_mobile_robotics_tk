@@ -111,7 +111,9 @@ classdef EKF_Localization_Student < handle
             time_cur = rostime('now');
             duration = time_cur-time_prev;
             deltaT = duration.Sec+duration.Nsec*10^-9;
-            
+            if (deltaT <= 0)
+                return;
+            end
             v_t = lin_vel;
             w_t = ang_vel;
             theta = obj.pred_state(3);
