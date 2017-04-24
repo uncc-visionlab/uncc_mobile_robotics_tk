@@ -43,17 +43,17 @@ classdef ROSGUI_SLAM < ROSGUI
             world_mat = WorldBuilder_MATLAB();
             GUI.world_mat = world_mat;
             
-            h = GUI.getFigure('MAP');
+            h = GUI.getFigure('ERROR');
             set(h,'Visible','on');
             h = GUI.getFigure('IMAGE');
             set(h,'Visible','on');
-            h = GUI.getFigure('ERROR');
+            h = GUI.getFigure('MAP');
             set(h,'Visible','on');
             
-            %ipaddress = '10.16.30.11';
+            ipaddress = '10.16.30.14';
             %ipaddress = '192.168.11.178';
             %ipaddress = '192.168.1.10';
-            ipaddress = '10.22.49.141';
+            %ipaddress = '10.22.49.141';
             if (robotics.ros.internal.Global.isNodeActive==0)
                 GUI.consolePrint(strcat(...
                     'Initializing ROS node with master IP .... ', ...
@@ -85,6 +85,11 @@ classdef ROSGUI_SLAM < ROSGUI
                 end
                 world_mat.makeMap(WORLD_MAP_INDEX);
                 %world_gaz.removeAllTemporaryModels();
+                pauseSim(world_gaz);
+                phys = readPhysics(world_gaz);
+                phys.UpdateRate = phys.UpdateRate/2;
+                setPhysics(world_gaz,phys);
+                resumeSim(world_gaz);
             end
             
             if (ACTIVATE_KOBUKI)
