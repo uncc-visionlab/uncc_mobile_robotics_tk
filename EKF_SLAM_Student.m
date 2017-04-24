@@ -264,7 +264,7 @@ classdef EKF_SLAM_Student < handle
             % assumption that the observation is an existing landmark
             F_xk = [eye(obj.robotStateDim), ...
                 zeros(obj.robotStateDim,obj.numLandmarks*obj.landmarkDim);
-                zeros(obj.robotStateDim,obj.robotStateDim+obj.numLandmarks*obj.landmarkDim)];
+                zeros(obj.landmarkDim,obj.robotStateDim+obj.numLandmarks*obj.landmarkDim)];
             min_log_likelihood = Inf;
             log_likelihood = zeros(obj.numLandmarks,1);
             for lidx=1:obj.numLandmarks
