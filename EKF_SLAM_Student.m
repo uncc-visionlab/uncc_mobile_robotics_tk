@@ -75,13 +75,13 @@ classdef EKF_SLAM_Student < handle
         
         function setCallbackRate(obj, rate, tfmgr)
             obj.ekfTimer = timer('TimerFcn', ...
-                {@obj.ekfLocalizationCallback, tfmgr}, ...
+                {@obj.ekfSLAMCallback, tfmgr}, ...
                 'Period',rate,'ExecutionMode','fixedSpacing');
             pause(2);
             start(obj.ekfTimer);
         end
         
-        function ekfLocalizationCallback(obj, varargin)
+        function ekfSLAMCallback(obj, varargin)
             persistent time_prev;
             tfmgr = varargin{3};            
             
