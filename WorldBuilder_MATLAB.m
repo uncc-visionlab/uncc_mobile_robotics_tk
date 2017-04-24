@@ -355,6 +355,36 @@ classdef WorldBuilder_MATLAB < handle
                         y(landmarkIdx)];
                     world_mat.makeLandmark(x(landmarkIdx), y(landmarkIdx), landmarkIdx);
                 end
+            elseif (map_index == 4)
+                pstart=[-3.5,-3.5]';
+                pend=pstart+1*world_mat.walldims(1)*dir_right;
+                world_mat.makeWall(pstart, pend);
+                pstart=pend;
+                pend=pstart+1*world_mat.walldims(1)*dir_up;
+                world_mat.makeWall(pstart, pend);
+                pstart=pend;
+                pend=pstart-1*world_mat.walldims(1)*dir_right;
+                world_mat.makeWall(pstart, pend);
+                pstart=pend;
+                pend=pstart-1*world_mat.walldims(1)*dir_up;
+                world_mat.makeWall(pstart, pend);
+                numLandmarks = 12;
+                if (world_mat.BUILD_GAZEBO_WORLD)
+                    %world_mat.gazebo.spawnModel(world_mat.point_light_model , ...
+                    %    [0, 0, .5]);
+                end
+                [x,y]=StateRenderer.makeCircle(3.3, numLandmarks, [.2 .2]);
+                for landmarkIdx=1:numLandmarks
+                    if (mod(landmarkIdx-1,2)==0)
+                        srcIdx = mod((landmarkIdx-1)/2,6)+1;
+                    else
+                        srcIdx = mod(landmarkIdx/2+2,6)+1;
+                    end
+                    world_mat.map_landmark_colors(landmarkIdx,:) = world_mat.landmark_colors(srcIdx,:); 
+                    world_mat.map_landmark_positions(landmarkIdx,:) = [x(landmarkIdx), ...
+                        y(landmarkIdx)];
+                    world_mat.makeLandmark(x(landmarkIdx), y(landmarkIdx), srcIdx);
+                end
             end
         end
         
