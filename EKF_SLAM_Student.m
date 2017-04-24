@@ -190,7 +190,6 @@ classdef EKF_SLAM_Student < handle
             % Step 1:
             % Estimate the global coordinate system position for landmark
             % m_xy
-            %     - Do a prediction at current time get the robot state
             %     - calculate mean of the landmark position            
             %pred_xy = obj.pred_state(1:2);
             pred_theta = obj.pred_state(3);
