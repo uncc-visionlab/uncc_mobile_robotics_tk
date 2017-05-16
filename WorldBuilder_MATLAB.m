@@ -385,6 +385,29 @@ classdef WorldBuilder_MATLAB < handle
                         y(landmarkIdx)];
                     world_mat.makeLandmark(x(landmarkIdx), y(landmarkIdx), srcIdx);
                 end
+            elseif (map_index == 5) % RANGE-ONLY SLAM MAP
+                numLandmarks = 12;
+                MIN_LANDMARK_2_LANDMARK_DISTANCE = 4; % meters
+                LANDMARK_POSITION_RANGE=[-10 10; 10 -10]; % top-left / bottom-right corners of rectangular region
+                rectDims = abs(LANDMARK_POSITION_RANGE(1,:)-LANDMARK_POSITION_RANGE(2,:));
+                landmarkRect_blc = LANDMARK_POSITION_RANGE(1,:)-[0, rectDims(2)];
+                for lidx=1:numLandmarks
+                    newLandmarkFound = false;
+                    while (~newLandmarkFound)
+                        newLandmarkFound = true;
+                        pos01 = rand(1,2);
+                        posXY = pos01.*rectDims + landmarkRect_blc;
+                        for cidx=1:(lidx-1)
+                            cposXY = world_mat.map_landmark_positions(cidx,:);
+                            dist2cidx = norm(cposXY-posXY);
+                            if (dist2cidx < MIN_LANDMARK_2_LANDMARK_DISTANCE)
+                                newLandmarkFound = false;
+                            end
+                        end
+                    end
+                    world_mat.makeLandmark(posXY(1), posXY(2), mod((lidx-1),3)+1);
+                    world_mat.map_landmark_positions(lidx,:) = posXY;
+                end
             end
         end
         

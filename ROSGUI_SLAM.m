@@ -49,8 +49,9 @@ classdef ROSGUI_SLAM < ROSGUI
             set(h,'Visible','on');
             h = GUI.getFigure('MAP');
             set(h,'Visible','on');
+            %set(h,'Color',[0.5 0.5 0.5]);
             
-            ipaddress = '10.16.30.14';
+            ipaddress = '10.16.30.10';
             %ipaddress = '192.168.11.178';
             %ipaddress = '192.168.1.10';
             %ipaddress = '10.22.49.141';
@@ -87,7 +88,7 @@ classdef ROSGUI_SLAM < ROSGUI
                 %world_gaz.removeAllTemporaryModels();
                 pauseSim(world_gaz);
                 phys = readPhysics(world_gaz);
-                phys.UpdateRate = phys.UpdateRate/2;
+                phys.UpdateRate = 50; % 100 = full speed / real time
                 setPhysics(world_gaz,phys);
                 resumeSim(world_gaz);
             end
@@ -149,7 +150,7 @@ classdef ROSGUI_SLAM < ROSGUI
                 end
                 kobuki.rgbCamListener.setCallbackRate(4, world_mat.tfmgr);
                 kobuki.rgbCamListener.getCameraInfo();
-
+                
                 %kobuki.localizationEKF.setTransformer(world_mat.tfmgr);
                 kobuki.localizationEKF.setCallbackRate(1, world_mat.tfmgr);
                 kobuki.localizationEKF.setLandmarkTopic('landmarks');

@@ -223,6 +223,7 @@ classdef RGBLandmarkEstimator_Student < RGBCameraListener
                             disp('RGBLandmarkEstimator::Landmark published');
                         end
                     end
+                    pause(rand(1,1)*0.05);
                 end
             end
             %obj.saveImageData(imgRGB);            
