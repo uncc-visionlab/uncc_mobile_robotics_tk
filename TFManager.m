@@ -26,7 +26,7 @@ classdef TFManager < handle
         tfpubtimer
         tftree
         tfmsgArray
-        numTfMsgs
+        numTfMsgs = 0;
     end
     
     methods (Static)
@@ -70,7 +70,7 @@ classdef TFManager < handle
     
     methods
         function obj = TFManager(callbackrate_hertz)
-            global GAZEBO_SIM;
+            %global GAZEBO_SIM;
             obj.tfpub = rospublisher('/tf', 'tf2_msgs/TFMessage');            
             % Create a timer for publishing tf messages
             obj.tftree = rostf;
@@ -81,14 +81,26 @@ classdef TFManager < handle
             for idx=1:obj.MAX_NUM_STATIC_TRANSFORMS
                 obj.tfmsgArray{idx}=obj.mynewTF2Message('','',[0 0 0], [1 0 0 0]);
             end
-            if (GAZEBO_SIM)
-                obj.setMessage(1,'map', 'odom', [0 0 0], [1 0 0 0]);
-                obj.setMessage(2,'map', 'odom_truth', [0 0 0], [1 0 0 0]);
-                obj.numTfMsgs=2;
-            end
             time_step = 1/callbackrate_hertz;
             obj.tfpubtimer = ExampleHelperROSTimer(time_step, {@obj.ROSTfPubTimer});            
             pause(1);
+        end
+        
+        function addKobuki(obj, parent_frame, child_frame, namespace)
+            global GAZEBO_SIM;
+            if (exist('namespace'))
+                child_frame_ns = strcat(namespace, '/', child_frame);
+            else
+                child_frame_ns = child_frame;
+            end
+            obj.numTfMsgs = obj.numTfMsgs + 1;
+            obj.setMessage(obj.numTfMsgs, parent_frame, child_frame_ns, ...
+                [0 0 0], [1 0 0 0]);
+            if (GAZEBO_SIM)
+                obj.numTfMsgs = obj.numTfMsgs + 1;
+                obj.setMessage(obj.numTfMsgs, parent_frame, ...
+                    strcat(child_frame_ns,'_truth'), [0 0 0], [1 0 0 0]);
+            end
         end
         
         function ROSTfPubTimer(obj, ~, ~)            

@@ -76,7 +76,7 @@ classdef PurePursuitController_Student < OdometryPathRecorder
     end
     
     methods
-        function obj = PurePursuitController_Student(stateProvider)
+        function obj = PurePursuitController_Student(stateProvider, namespace)
             obj@OdometryPathRecorder(stateProvider);
             obj.closest_pathPts = zeros(obj.MAX_VALUES,3);
             obj.velocityPub = rospublisher('/mobile_base/commands/velocity');

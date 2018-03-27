@@ -57,7 +57,7 @@ classdef LaserScanListener < handle
     end
     
     methods
-        function obj = LaserScanListener(topicstr)
+        function obj = LaserScanListener(topicstr, namespace)
             obj.laserScanSub = rossubscriber(topicstr,'BufferSize',10);
             obj.tf_baseNode = 'base_link';
             obj.failedMsgCount = 0;

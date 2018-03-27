@@ -41,7 +41,7 @@ classdef OdometryListener < handle
     end
 
     methods
-        function obj = OdometryListener(stateProvider)
+        function obj = OdometryListener(stateProvider, namespace)
             if (isa(stateProvider,'KobukiSim'))
                 obj.stateProvider = stateProvider;
                 obj.hasStateProvider = true;

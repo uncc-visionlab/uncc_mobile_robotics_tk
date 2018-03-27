@@ -32,9 +32,9 @@ classdef RGBCameraListener < handle
         function imgRGB = convertRGBImageMessage(imgMsg)
             imgRGB=[];
             numpixels=length(imgMsg.Data);
-            r=imgMsg.Data(1:3:numpixels);
+            r=imgMsg.Data(3:3:numpixels);
             g=imgMsg.Data(2:3:numpixels);
-            b=imgMsg.Data(3:3:numpixels);
+            b=imgMsg.Data(1:3:numpixels);
             r=reshape(r,imgMsg.Width,imgMsg.Height)';
             g=reshape(g,imgMsg.Width,imgMsg.Height)';
             b=reshape(b,imgMsg.Width,imgMsg.Height)';
@@ -57,7 +57,7 @@ classdef RGBCameraListener < handle
     end
     
     methods
-        function obj = RGBCameraListener()
+        function obj = RGBCameraListener(namespace)
             obj.rgbCamSub = rossubscriber('/camera/rgb/image_raw','BufferSize',1);
             obj.tf_baseNode = 'base_link';
             obj.failedMsgCount = 0;

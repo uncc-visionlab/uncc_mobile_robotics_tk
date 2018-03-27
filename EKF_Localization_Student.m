@@ -33,7 +33,7 @@ classdef EKF_Localization_Student < handle
     end
     
     methods
-        function obj = EKF_Localization_Student()
+        function obj = EKF_Localization_Student(namespace)
             obj.prior_mean=[0 0 0]';
             obj.prior_covariance=zeros(3,3);
             obj.prior_covariance(1,1) = .4;

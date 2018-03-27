@@ -22,7 +22,7 @@ classdef LaserScanAvoidController < LaserScanListener
     end
     
     methods
-        function obj = LaserScanAvoidController()
+        function obj = LaserScanAvoidController(namespace)
             obj@LaserScanListener();
             obj.velocityPub = rospublisher('/mobile_base/commands/velocity');
             obj.velocityMsg = rosmessage(obj.velocityPub);

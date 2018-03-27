@@ -47,7 +47,7 @@ classdef WorldBuilder_MATLAB < handle
         tfmgr
         
         % Kobuki robot class
-        kobuki
+        %kobuki
         
         randomLocationButton
         resetSimulationButton
@@ -530,11 +530,11 @@ classdef WorldBuilder_MATLAB < handle
             %resetSimulation(obj);
             % disp('Reset sim');
             obj.gazebo.resetSim();
-            if (isempty(obj.kobuki)==0)
-                setState(obj.kobuki,'position',[0 0 0], ...
-                    'orientation', [0 0 0], ...
-                    'linvel',[0 0 0], 'angvel', [0 0 0]);
-            end
+            %if (isempty(obj.kobuki)==0)
+            %    setState(obj.kobuki,'position',[0 0 0], ...
+            %        'orientation', [0 0 0], ...
+            %        'linvel',[0 0 0], 'angvel', [0 0 0]);
+            %end
         end
     end
 end

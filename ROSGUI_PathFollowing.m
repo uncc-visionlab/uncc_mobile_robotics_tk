@@ -49,8 +49,9 @@ classdef ROSGUI_PathFollowing < ROSGUI
             h = GUI.getFigure('ERROR');
             set(h,'Visible','on');
             
+            ipaddress = '127.0.0.1';
             %ipaddress = '10.22.77.34';
-            ipaddress = '192.168.11.178';
+            %ipaddress = '192.168.11.178';
             %ipaddress = '10.16.30.11';
             if (robotics.ros.internal.Global.isNodeActive==0)
                 GUI.consolePrint(strcat(...
@@ -95,7 +96,8 @@ classdef ROSGUI_PathFollowing < ROSGUI
                     send(velocityPub, velocityMsg);
                 end
                 kobuki = KobukiSim(world_gaz);
-                world_mat.kobuki = kobuki;
+                world_mat.tfmgr.addKobuki('map','odom');
+                %world_mat.kobuki = kobuki;
                 
                 if (isempty(world_mat.wayPoints) && 1==0)
                     pause(2);
@@ -119,8 +121,8 @@ classdef ROSGUI_PathFollowing < ROSGUI
                 end
                 % seconds (odometry)
                 %kobuki.odometryListener.setCallbackRate('fastest');
-                %kobuki.odometryListener.setCallbackRate(0.1, world_mat.tfmgr);
-                kobuki.laserScanListener.setCallbackRate(0.5, world_mat.tfmgr);
+                %kobuki.odometryListe ner.setCallbackRate(0.1, world_mat.tfmgr);
+                %kobuki.laserScanListener.setCallbackRate(0.5, world_mat.tfmgr);
                 %kobuki.rgbCamListener.setCallbackRate(4, world_mat.tfmgr);
                 kobuki.rgbCamListener.getCameraInfo();
                 %kobuki.odometryEKF.setTransformer(world_mat.tfmgr);

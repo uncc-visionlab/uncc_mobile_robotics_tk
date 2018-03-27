@@ -32,7 +32,7 @@ classdef Kobuki < handle
     end
     
     methods
-        function obj = Kobuki()
+        function obj = Kobuki(namespace)
             obj.laserScanListener = LaserScanListener('/scan');
             obj.rgbCamListener = RGBCameraListener();
             %obj.odometryListener = OdometryPathRecorder(obj);

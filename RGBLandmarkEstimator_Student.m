@@ -7,6 +7,7 @@ classdef RGBLandmarkEstimator_Student < RGBCameraListener
         landmarkColors
         landmarkDiameter
         landmarkPublisher
+        namespace
         VERBOSE
     end
     methods (Static)
@@ -131,8 +132,9 @@ classdef RGBLandmarkEstimator_Student < RGBCameraListener
     end
     
     methods
-        function obj = RGBLandmarkEstimator_Student()
+        function obj = RGBLandmarkEstimator_Student(namespace)
             obj@RGBCameraListener();
+            obj.namespace = namespace;
             obj.VERBOSE = true;
         end
         
@@ -149,6 +151,9 @@ classdef RGBLandmarkEstimator_Student < RGBCameraListener
         end
         
         function setPublisher(obj, topic)
+            if (~isempty(obj.namespace))
+                topic = strcat(namespace,'/', topic);
+            end
             obj.landmarkPublisher = rospublisher(topic,'sensor_msgs/PointCloud');
         end
                 
@@ -187,9 +192,14 @@ classdef RGBLandmarkEstimator_Student < RGBCameraListener
                         fprintf('RGBLandmarkEstimator::Landmark detected: index %d, color (%d,%d,%d), (Radius,Heading) (%0.2f m., %0.2f degrees)\n', ...
                             idx, signature(1), signature(2), signature(3), radius_m, phi*180/pi);
                     end
-                    if (tfmgr.tftree.canTransform('map', 'base_link_truth'))
-                        tfmgr.tftree.waitForTransform('map', 'base_link_truth');
-                        map2basetf = tfmgr.tftree.getTransform('map', 'base_link_truth');
+                    if (~isempty(obj.namespace))
+                        base_link_truth = strcat(obj.namespace,'/', 'base_link_truth');
+                    else
+                        base_link_truth = 'base_link_truth';
+                    end
+                    if (tfmgr.tftree.canTransform('map', base_link_truth))
+                        tfmgr.tftree.waitForTransform('map', base_link_truth);
+                        map2basetf = tfmgr.tftree.getTransform('map', base_link_truth);
                         tVal = map2basetf.Transform.Translation;
                         qVal = map2basetf.Transform.Rotation;
                         pose = LocalPose([tVal.X tVal.Y tVal.Z], ...
