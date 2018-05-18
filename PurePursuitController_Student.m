@@ -77,9 +77,10 @@ classdef PurePursuitController_Student < OdometryPathRecorder
     
     methods
         function obj = PurePursuitController_Student(stateProvider, namespace)
-            obj@OdometryPathRecorder(stateProvider);
+            obj@OdometryPathRecorder(stateProvider, namespace);
             obj.closest_pathPts = zeros(obj.MAX_VALUES,3);
-            obj.velocityPub = rospublisher('/mobile_base/commands/velocity');
+            topic_vel = OdometryListener.extendTopic('/mobile_base/commands/velocity', namespace);
+            obj.velocityPub = rospublisher(topic_vel);
             obj.velocityMsg = rosmessage(obj.velocityPub);
             obj.goalRadius = 0.1;           % m
             obj.maxAngularVelocity = pi/4;  % rad/sec
@@ -89,7 +90,7 @@ classdef PurePursuitController_Student < OdometryPathRecorder
             obj.goalPtIdx = 0;
             obj.VISUALIZE_ALGORITHM = false;
             obj.VISUALIZE_METRICS = true;
-            obj.tfPoseFrame = 'base_link'; % use odometry for pose
+            obj.tfPoseFrame = OdometryListener.extendTopic('/base_link', namespace); % use odometry for pose
             obj.dir=1;
         end
         
@@ -136,7 +137,9 @@ classdef PurePursuitController_Student < OdometryPathRecorder
                     else
                         startPt = endPt;
                     end
-                    GUI.setFigure('ERROR');
+                    %error_image = strcat(obj.namespace,'ERROR');
+                    error_image = 'ERROR';
+                    GUI.setFigure(error_image, obj.namespace);
                     queryPt = pose.position(1:2)';
                     closestPt = PurePursuitController_Student.closestPointOnSegment( startPt, endPt, queryPt);
                     obj.pathError(obj.numPathPts) = norm(closestPt-queryPt);
@@ -152,6 +155,9 @@ classdef PurePursuitController_Student < OdometryPathRecorder
         end
         
         function setPoseFrame(obj, frame_name)
+            if (~isempty(obj.namespace))
+                frame_name = strcat(obj.namespace,'/',frame_name);
+            end
             obj.tfPoseFrame = frame_name;
         end
         
@@ -170,7 +176,7 @@ classdef PurePursuitController_Student < OdometryPathRecorder
             currentPos = pose.position(1:2)';
             rpy=PurePursuitController_Student.quat2rpy(pose.qorientation);
             yawAngle = rpy(3);
-            if (true)                
+            if (true)
                 obj.velocityMsg.Linear.X = 0.0;
                 if (mod(floor(duration_secs/30),2)==0)
                     obj.velocityMsg.Angular.Z = 0.07;
@@ -211,7 +217,7 @@ classdef PurePursuitController_Student < OdometryPathRecorder
             end
             
             goalPt = obj.findGoalPoint(currentPos);
-
+            
             %%%%% ADD CODE HERE %%%%%%%%%%
             
             % Command robot action

@@ -3,6 +3,8 @@ classdef EKF_SLAM_Student < handle
     %   Detailed explanation goes here
     
     properties
+        namespace
+        
         prior_mean
         prior_covariance
         
@@ -38,10 +40,18 @@ classdef EKF_SLAM_Student < handle
         M_t = 1e-1*[0.25 0; 0 0.25];
         Q_t = [0.2 0; 0 0.8*pi/180];
         signatureCov = [0.001 0 0; 0 0.001 0; 0 0 0.001];
+
+        time_prev_controlInputCallback
+        time_prev_ekfSLAMCallback
     end
     
     methods
         function obj = EKF_SLAM_Student(namespace)
+            if (exist('namespace','var'))
+                obj.namespace = namespace;
+            else
+                obj.namespace = [];
+            end            
             obj.prior_mean=[0 0 0]';
             obj.prior_covariance=zeros(3,3);
             obj.prior_covariance(1,1) = 1e-5;
@@ -51,13 +61,17 @@ classdef EKF_SLAM_Student < handle
             obj.pred_state = obj.prior_mean;
             obj.pred_state_cov = obj.prior_covariance;
             
+            base_node = strcat(namespace,'/base_link_truth');
+            loc_tform_ChildFrameId = strcat(namespace,'/loc_base_link');
+
             obj.tf_baseNode = 'base_link_truth';
 
             obj.loc_tform = rosmessage('geometry_msgs/TransformStamped');
-            obj.loc_tform.ChildFrameId = 'loc_base_link';
+            obj.loc_tform.ChildFrameId = loc_tform_ChildFrameId;
             obj.loc_tform.Header.FrameId = 'map';
            
-            obj.localizationPublisher = rospublisher('ekf_loc', ...
+            pose_topic = strcat(namespace,'/ekf_loc');
+            obj.localizationPublisher = rospublisher(pose_topic, ...
                 'nav_msgs/Odometry');
             obj.localization_odomMsg = rosmessage(obj.localizationPublisher);
             
@@ -81,14 +95,29 @@ classdef EKF_SLAM_Student < handle
             start(obj.ekfTimer);
         end
         
+        function setRobotPose(obj, position, qorientation)
+            if (obj.robotStateDim==3)
+                obj.pred_state(1:2) = position(1:2);                
+                rpy=QuatLib.quat2rpy(qorientation);
+                yawAngle = rpy(3);
+                obj.pred_state(3) = yawAngle;
+            elseif (obj.robotStateDim==6)
+                obj.pred_state(1:3) = position;
+                obj.pred_state(4:6) = qorientation(1:3);
+            end
+        end
+        
+        function setRobotPoseCovariance(obj, cov)
+            obj.pred_state_cov(1:obj.robotStateDim,1:obj.robotStateDim) = cov;
+        end
+        
         function ekfSLAMCallback(obj, varargin)
-            persistent time_prev;
             tfmgr = varargin{3};            
             
             time_cur = rostime('now');
             obj.loc_position = [obj.pred_state(1) obj.pred_state(2) 0];
             obj.loc_qorientation = QuatLib.rpy2quat([0 0 obj.pred_state(3)]);
-            if (~isempty(time_prev))
+            if (~isempty(obj.time_prev_ekfSLAMCallback))
                 obj.loc_tform = TFManager.populateTransformStamped( ...
                     obj.loc_tform, obj.loc_position, ...
                     obj.loc_qorientation, time_cur);                    
@@ -116,7 +145,7 @@ classdef EKF_SLAM_Student < handle
                         landmarkQuat, landmarkCov);
                 end
             end
-            time_prev = time_cur;            
+            obj.time_prev_ekfSLAMCallback = time_cur;            
         end
 
         function setControlInputTopic(obj, topic)
@@ -125,14 +154,13 @@ classdef EKF_SLAM_Student < handle
         end
         
         function controlInputCallback(obj, subscriber, msg)
-            persistent time_prev;            
-            if (isempty(time_prev))
-                time_prev = rostime('now');                
+            if (isempty(obj.time_prev_controlInputCallback))
+                obj.time_prev_controlInputCallback = rostime('now');                
             end
             lin_vel = msg.Linear.X;
             ang_vel = msg.Angular.Z;
             time_cur = rostime('now');
-            duration = time_cur-time_prev;
+            duration = time_cur-obj.time_prev_controlInputCallback;
             deltaT = duration.Sec+duration.Nsec*10^-9;
             if (deltaT <= 0)
                 return;
@@ -153,7 +181,7 @@ classdef EKF_SLAM_Student < handle
             % 
             obj.pred_state = obj.pred_state + motion;
 
-            time_prev = time_cur;
+            obj.time_prev_controlInputCallback = time_cur;
             if (obj.VERBOSE)
                 fprintf('EKF_SLAM::Velocity control received (Linear,Angular)=(%0.2f m., %0.2f degrees)/sec\n', ...
                     lin_vel, ang_vel*180/pi);

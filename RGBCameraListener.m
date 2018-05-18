@@ -15,6 +15,7 @@
 classdef RGBCameraListener < handle
     properties
         %rgbCamTopic
+        namespace
         rgbCamSub
         rgbCamTimer
         rgbCamInfoSub
@@ -41,32 +42,50 @@ classdef RGBCameraListener < handle
             imgRGB = cat(3,r,g,b);
         end
         
-        function showRGBImage(imgRGB)
+        function showRGBImage(imgRGB, namespace)
             global START_TIME GUI;
-            GUI.setFigure('IMAGE');
+            if (exist('namespace','var')==0)
+                namespace = [];
+            end
+            GUI.setFigure('IMAGE', namespace);
             cla(gca); % clear the axes            
             imshow(imgRGB);
 
             duration = rostime('now')-START_TIME;
             duration_secs = duration.Sec+duration.Nsec*10^-9;
             
-            GUI.setFigure('IMAGE')
+            GUI.setFigure('IMAGE', namespace)
             xlabelstr = sprintf('Image timestamp: %0.3f',duration_secs);
             xlabel(xlabelstr);
-        end        
+        end
+                    
+        function ns_topic = extendTopic(topic, namespace) 
+            if (~isempty(namespace))
+                ns_topic = strcat('/', namespace, topic);
+            else
+                ns_topic = topic;
+            end
+        end
     end
     
     methods
         function obj = RGBCameraListener(namespace)
-            obj.rgbCamSub = rossubscriber('/camera/rgb/image_raw','BufferSize',1);
-            obj.tf_baseNode = 'base_link';
+            if (~isempty(namespace))
+                obj.namespace = namespace;
+            else
+                obj.namespace = [];
+            end
+            image_topic = RGBCameraListener.extendTopic('/camera/rgb/image_raw', obj.namespace);
+            obj.tf_baseNode = RGBCameraListener.extendTopic('/base_link', obj.namespace);
+            obj.rgbCamSub = rossubscriber(image_topic,'BufferSize',2);
             obj.failedMsgCount = 0;
             obj.MAX_BAD_MSGS = 3;
         end
         
         function getCameraInfo(obj) 
+            info_topic = RGBCameraListener.extendTopic('/camera/rgb/camera_info',obj.namespace);
             if (size(obj.rgbCamInfoSub,1)==0)
-                obj.rgbCamInfoSub = rossubscriber('/camera/rgb/camera_info','BufferSize',1);
+                obj.rgbCamInfoSub = rossubscriber(info_topic ,'BufferSize', 1);
             end
             cameraInfoMsg = receive(obj.rgbCamInfoSub);
             obj.distortionCoeffs = cameraInfoMsg.D;
@@ -96,7 +115,7 @@ classdef RGBCameraListener < handle
                 tfmgr = varargin{2};
             end
             if (isempty(rgbCamMessage))
-                disp('RGBCameraListener::Skipping empty image message.');                
+                fprintf('RGBCameraListener for %s ::Skipping empty image message.', obj.namespace);                
                 obj.failedMsgCount = obj.failedMsgCount + 1;
                 if (obj.failedMsgCount > obj.MAX_BAD_MSGS)
                     delete obj;
@@ -120,12 +139,12 @@ classdef RGBCameraListener < handle
                 end                
                 obj.processImage(imgRGB, tfmgr, rgbCamMessage.Header.Stamp);
             else
-                disp('RGBCameraListener::Could not get map->base_link transform');
+                fprintf('RGBCameraListener for %s ::Could not get map->base_link transform', obj.namespace);
             end
         end
                
         function processImage(obj, imgRGB, tfmgr, tstamp)
-            RGBCameraListener.showRGBImage(imgRGB);
+            RGBCameraListener.showRGBImage(imgRGB, obj.namespace);
             obj.saveImageData(imgRGB);
         end
         

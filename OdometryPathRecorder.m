@@ -27,7 +27,7 @@ classdef OdometryPathRecorder < OdometryListener
     methods
         function obj = OdometryPathRecorder(stateProvider, namespace)
             global GAZEBO_SIM;
-            obj@OdometryListener(stateProvider);
+            obj@OdometryListener(stateProvider, namespace);
             obj.odom_pathPts=zeros(obj.MAX_VALUES,3);
             if (GAZEBO_SIM==true)
                 obj.actual_pathPts=zeros(obj.MAX_VALUES,3);

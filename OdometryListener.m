@@ -18,6 +18,7 @@ classdef OdometryListener < handle
         % e.g. Gazebo provides this function during simulation
         stateProvider
         hasStateProvider
+        namespace
         
         odometrySub
         odometryTimer
@@ -39,6 +40,16 @@ classdef OdometryListener < handle
         failedMsgCount
         MAX_BAD_MSGS
     end
+                
+    methods (Static)
+        function ns_topic = extendTopic(topic, namespace) 
+            if (~isempty(namespace))
+                ns_topic = strcat('/', namespace, topic);
+            else
+                ns_topic = topic;                
+            end
+        end
+    end
 
     methods
         function obj = OdometryListener(stateProvider, namespace)
@@ -48,18 +59,29 @@ classdef OdometryListener < handle
             else
                 obj.hasStateProvider = false;
             end
+            if (~isempty(namespace)) 
+                obj.namespace = namespace;
+            else
+                obj.namespace = [];
+            end
             obj.ADD_NOISE = false;
-            obj.odometrySub = rossubscriber('/odom','BufferSize',1);
+            odom_topic = OdometryListener.extendTopic('/odom', obj.namespace);
+            obj.odometrySub = rossubscriber(odom_topic ,'BufferSize',1);
             
             obj.odom_tform = rosmessage('geometry_msgs/TransformStamped');
-            obj.odom_tform.ChildFrameId = 'base_link';
-            obj.odom_tform.Header.FrameId = 'odom';
-
+            
+            child_frame_odom = OdometryListener.extendTopic('/base_link', obj.namespace);
+            parent_frame_odom = OdometryListener.extendTopic('/odom', obj.namespace);
+            obj.odom_tform.ChildFrameId = child_frame_odom;
+            obj.odom_tform.Header.FrameId = parent_frame_odom;
+    
             obj.odom_stateRenderer = StateRenderer(); % draws odometry state estimate
 
             obj.actual_tform = rosmessage('geometry_msgs/TransformStamped');
-            obj.actual_tform.ChildFrameId = 'base_link_truth';
-            obj.actual_tform.Header.FrameId = 'odom_truth';
+            child_frame_actual = OdometryListener.extendTopic('/base_link_truth', obj.namespace);
+            parent_frame_actual = OdometryListener.extendTopic('/odom_truth', obj.namespace);
+            obj.actual_tform.ChildFrameId = child_frame_actual;
+            obj.actual_tform.Header.FrameId = parent_frame_actual;
 
             obj.actual_stateRenderer = StateRenderer(); % draws ground truth state
             obj.actual_stateRenderer.body_color = [0.4 0.4 0.4];
@@ -166,8 +188,9 @@ classdef OdometryListener < handle
                 %delta_t = 0;
                 % initialize actual = odom on first function call
                 disp('Initializing odom position and orientation to ground truth values.');
-                tfmgr.setMessage(1,'map', 'odom', obj.actual_position, ...
-                    obj.actual_qorientation);
+                parent_frame_odom = OdometryListener.extendTopic('/odom', obj.namespace);                               
+                tfmgr.setMessage(1,'map', parent_frame_odom, obj.actual_position, ...
+                     obj.actual_qorientation);
             end
             time_prev = time_cur;
         end

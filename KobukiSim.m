@@ -34,12 +34,15 @@ classdef KobukiSim < ExampleHelperGazeboSpawnedModel
     
     methods
         function obj = KobukiSim(gazebo, namespace)
-            obj@ExampleHelperGazeboSpawnedModel('mobile_base',gazebo);
+            if (exist('namespace','var')==0)
+                namespace = 'mobile_base';
+            end
+            obj@ExampleHelperGazeboSpawnedModel(namespace,gazebo);
             obj.world_gazebo = gazebo;
             %obj.laserScanListener = LaserScanListener('/hokuyo_scan');
-            if (~exist('namespace'))
-                namespace = '';
-            end
+            %if (~exist('namespace','var'))
+            %    namespace = '';
+            %end
             
             %obj.rgbCamListener = RGBCameraListener(namespace);
             %obj.rgbCamListener = RGBLandmarkEstimator(namespace);

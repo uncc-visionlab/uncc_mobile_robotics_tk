@@ -7,10 +7,8 @@ classdef ROSGUI < handle
         world_mat         % WorldBuilder_MATLAB object
         host_os           % Host operating system: 'Windows','MacOSX','Unix'
         ip_address
-        figure_map
-        figure_img
-        figure_error
-        %figure_gui
+        figure_global_map
+        bot_figures
     end
     methods (Static)
         function demo
@@ -26,19 +24,13 @@ classdef ROSGUI < handle
     
     methods
         function rosgui = ROSGUI()
-            rosgui.figure_map = figure(1);
-            title('MAP');
+            rosgui.figure_global_map = figure(1);
+            map = strcat('MAP');
+            title(map);
             hold on;
-            set(rosgui.figure_map,'Visible','off');
-            rosgui.figure_img = figure(2);
-            hold on;
-            title('IMAGE');
-            set(rosgui.figure_img,'Visible','off');
-            rosgui.figure_error = figure(3);
-            hold on;
-            title('ERROR');
-            set(rosgui.figure_error,'Visible','off');
-            rosgui.VERBOSE = true;
+            set(rosgui.figure_global_map,'Visible','off');
+            rosgui.bot_figures = containers.Map();
+            rosgui.initBotFigures();
             if (ispc)
                 rosgui.host_os='Windows';
             elseif (ismac)
@@ -50,31 +42,55 @@ classdef ROSGUI < handle
             fprintf(1,'Detected host IP address: %s\n',rosgui.ip_address);
         end
         
-        function setFigure(rosgui, figString)
-            switch (figString)
-                case 'MAP'
-                    set(0,'CurrentFigure',rosgui.figure_map);
-                case 'IMAGE'
-                    set(0,'CurrentFigure',rosgui.figure_img);
-                case 'ERROR'
-                    set(0,'CurrentFigure',rosgui.figure_error);
-                otherwise
-                    fprintf(1,'ROSGUI::setCurrentFigure() Could not set the figure to invalid string ''%s''\n', ...
-                        figString);
+        
+        function initBotFigures(rosgui, namespace)
+            if (exist('namespace','var')==0)
+                namespace = [];
             end
+            image_fig_str = strcat(namespace,'IMAGE');
+            rosgui.bot_figures(image_fig_str) = figure();
+            hold on;
+            title(image_fig_str);
+            set(rosgui.bot_figures(image_fig_str),'Visible','off');
+            
+            error_fig_str = strcat(namespace,'ERROR');
+            rosgui.bot_figures(error_fig_str) = figure();
+            hold on;
+            title(error_fig_str);
+            set(rosgui.bot_figures(error_fig_str),'Visible','off');
+            rosgui.VERBOSE = true;
         end
         
-        function fig_h = getFigure(rosgui, figString)
-            switch (figString)
-                case 'MAP'
-                    fig_h = rosgui.figure_map;
-                case 'IMAGE'
-                    fig_h = rosgui.figure_img;
-                case 'ERROR'
-                    fig_h = rosgui.figure_error;
-                otherwise
-                    fprintf(1,'ROSGUI::getFigure() Could not get the figure to invalid string ''%s''\n', ...
-                        figString);
+        function setFigure(rosgui, figString, namespace)
+            if (exist('namespace','var')==0)
+                namespace = [];
+            end
+            fig_str = strcat(namespace,figString);
+            if (strcmp(figString,'MAP')==1)
+                    set(0,'CurrentFigure',rosgui.figure_global_map);
+            else
+                try  
+                    fig_h = rosgui.bot_figures(fig_str); 
+                    set(0,'CurrentFigure',fig_h);
+                catch
+                    fprintf(1,'ROSGUI::setFigure() Could not find figure %s for namespace %s',figString, namespace); 
+                end
+            end            
+        end
+        
+        function fig_h = getFigure(rosgui, figString, namespace)
+            if (exist('namespace','var')==0)
+                namespace = [];
+            end
+            fig_str = strcat(namespace,figString);
+            if (strcmp(figString,'MAP')==1)
+                fig_h = rosgui.figure_global_map;
+            else
+                try
+                    fig_h = rosgui.bot_figures(fig_str);
+                catch
+                    fprintf(1,'ROSGUI::getFigure() Could not find figure %s for namespace %s',figString, namespace);
+                end
             end
         end
         
@@ -99,7 +115,7 @@ classdef ROSGUI < handle
             ip_regex2 = strcat(regex_first_triplet, ...
                 regex_last_digits);
             ipaddress_strs = regexp(stdout_str, ip_regex, 'match');
-            ipaddresses = regexp(ipaddress_strs, ip_regex2, 'match');            
+            ipaddresses = regexp(ipaddress_strs, ip_regex2, 'match');
             ipAddrString = '';
             for sIdx=1:length(ipaddresses)
                 trimstr = strtrim(ipaddresses{sIdx}{1});
