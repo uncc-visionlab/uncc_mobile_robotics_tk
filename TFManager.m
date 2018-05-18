@@ -86,20 +86,26 @@ classdef TFManager < handle
             pause(1);
         end
         
-        function addKobuki(obj, parent_frame, child_frame, namespace)
+        function addKobuki(obj, parent_frame, child_frame, namespace, position, qorientation)
             global GAZEBO_SIM;
-            if (exist('namespace'))
+            if (exist('namespace', 'var'))
                 child_frame_ns = strcat(namespace, '/', child_frame);
             else
                 child_frame_ns = child_frame;
             end
+            if (~exist('position', 'var'))
+                position = [0 0 0];
+            end
+            if (~exist('qorientation', 'var'))
+                qorientation = [1 0 0 0];
+            end
             obj.numTfMsgs = obj.numTfMsgs + 1;
             obj.setMessage(obj.numTfMsgs, parent_frame, child_frame_ns, ...
-                [0 0 0], [1 0 0 0]);
+                position, qorientation);
             if (GAZEBO_SIM)
                 obj.numTfMsgs = obj.numTfMsgs + 1;
                 obj.setMessage(obj.numTfMsgs, parent_frame, ...
-                    strcat(child_frame_ns,'_truth'), [0 0 0], [1 0 0 0]);
+                    strcat(child_frame_ns,'_truth'), position, qorientation);
             end
         end
         
