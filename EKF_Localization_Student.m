@@ -64,6 +64,7 @@ classdef EKF_Localization_Student < handle
             obj.ekfTimer = timer('TimerFcn', ...
                 {@obj.ekfLocalizationCallback, tfmgr}, ...
                 'Period',rate,'ExecutionMode','fixedSpacing');
+            obj.ekfTimer.BusyMode = 'queue';
             pause(2);
             start(obj.ekfTimer);
         end

@@ -160,7 +160,7 @@ classdef RGBLandmarkEstimator_Student < RGBCameraListener
             RGBCameraListener.showRGBImage(imgRGB, obj.namespace);
             [idxs,centers,radii,signatures] = RGBLandmarkEstimator_Student.findColoredSpheres( ...
                 imgRGB, obj.landmarkColors);
-            GUI.setFigure('IMAGE')
+            GUI.setFigure('IMAGE', obj.namespace);
             time_cur = rostime('now');
             duration = time_cur-tstamp;
             deltaT = duration.Sec+duration.Nsec*10^-9;

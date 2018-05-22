@@ -22,7 +22,6 @@ classdef ROSGUI_MULTIROBOT_SLAM < ROSGUI
                 WORLD_MAP_INDEX = 3;
                 BUILD_GAZEBO_WORLD = true;
                 ACTIVATE_KOBUKI = true;
-                namespace = {'turtlebot' 'turtlebot2'};
             else
                 GAZEBO_SIM = false;
                 WORLD_MAP_INDEX = 0;
@@ -82,7 +81,7 @@ classdef ROSGUI_MULTIROBOT_SLAM < ROSGUI
                 %world_gaz.removeAllTemporaryModels();
                 pauseSim(world_gaz);
                 phys = readPhysics(world_gaz);
-                phys.UpdateRate = 50; % 100 = full speed / real time
+                phys.UpdateRate = 20; % 100 = full speed / real time
                 setPhysics(world_gaz,phys);
                 resumeSim(world_gaz);
             end
@@ -98,7 +97,7 @@ classdef ROSGUI_MULTIROBOT_SLAM < ROSGUI
                     GUI.initBotFigures(bots(botIdx).name);
                     h = GUI.getFigure('IMAGE',bots(botIdx).name);
                     set(h,'Visible','on');
-
+                    
                     kobuki = KobukiSim(world_gaz, bots(botIdx).name);
                     [bot_position, bot_euler_angles_deg] = kobuki.getState();
                     bot_qorientation = eul2quat(bot_euler_angles_deg*pi/180,'ZYX');
@@ -129,13 +128,17 @@ classdef ROSGUI_MULTIROBOT_SLAM < ROSGUI
                         GUI.setFigure('MAP');
                         path_handle = plot(path(:,1), path(:,2),'k--d');
                     end
+                end
+                
+                for botIdx=1:length(bots)
+                    kobuki = bots(botIdx).kobuki;
                     
                     if (isa(kobuki.rgbCamListener,'RGBLandmarkEstimator') || ...
                             isa(kobuki.rgbCamListener,'RGBLandmarkEstimator_Student'))
                         kobuki.rgbCamListener.setLandmarkPositions(world_mat.map_landmark_positions);
                         kobuki.rgbCamListener.setLandmarkColors(world_mat.map_landmark_colors);
                         kobuki.rgbCamListener.setLandmarkDiameter(2*0.05); % 10 cm diameter markers
-                        kobuki.rgbCamListener.setPublisher('landmarks');                       
+                        kobuki.rgbCamListener.setPublisher('landmarks');
                         %disp(world_mat.map_landmark_positions);
                     end
                     kobuki.rgbCamListener.setCallbackRate(4, world_mat.tfmgr);
@@ -155,12 +158,9 @@ classdef ROSGUI_MULTIROBOT_SLAM < ROSGUI
                     if (isa(kobuki.velocityController,'PurePursuitController_Student') || ...
                             isa(kobuki.velocityController,'PurePursuitController'))
                         disp('Sending waypoints to pure pursuit controller.');
-                        kobuki.velocityController.setWaypoints(waypoints);
+                        kobuki.velocityController.setWaypoints(bots(botIdx).waypoints);
                         kobuki.velocityController.setPoseFrame('loc_base_link');
-                    end
-                    
-                    if (~isempty(kobuki.velocityController))
-                        kobuki.velocityController.setCallbackRate(0.6, world_mat.tfmgr);
+                        kobuki.velocityController.setCallbackRate(1, world_mat.tfmgr);
                     end
                 end
             end

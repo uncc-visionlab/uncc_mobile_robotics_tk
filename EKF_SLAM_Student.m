@@ -70,8 +70,8 @@ classdef EKF_SLAM_Student < handle
             obj.loc_tform.ChildFrameId = loc_tform_ChildFrameId;
             obj.loc_tform.Header.FrameId = 'map';
            
-            pose_topic = strcat(namespace,'/ekf_loc');
-            obj.localizationPublisher = rospublisher(pose_topic, ...
+            localization_topic = strcat(namespace,'/ekf_loc');
+            obj.localizationPublisher = rospublisher(localization_topic, ...
                 'nav_msgs/Odometry');
             obj.localization_odomMsg = rosmessage(obj.localizationPublisher);
             
@@ -91,6 +91,7 @@ classdef EKF_SLAM_Student < handle
             obj.ekfTimer = timer('TimerFcn', ...
                 {@obj.ekfSLAMCallback, tfmgr}, ...
                 'Period',rate,'ExecutionMode','fixedSpacing');
+            obj.ekfTimer.BusyMode = 'queue';
             pause(2);
             start(obj.ekfTimer);
         end

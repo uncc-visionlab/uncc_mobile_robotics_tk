@@ -72,6 +72,7 @@ classdef LaserScanListener < handle
                 obj.laserScanTimer = timer('TimerFcn', ...
                     {@obj.laserScanCallback, obj.laserScanSub, tfmgr}, ...
                     'Period',rate,'ExecutionMode','fixedSpacing');
+                obj.laserScanTimer.BusyMode = 'queue';                
                 pause(2);
                 start(obj.laserScanTimer);
             end

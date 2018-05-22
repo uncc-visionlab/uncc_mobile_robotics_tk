@@ -39,6 +39,8 @@ classdef OdometryListener < handle
         
         failedMsgCount
         MAX_BAD_MSGS
+        
+        time_prev
     end
                 
     methods (Static)
@@ -103,6 +105,7 @@ classdef OdometryListener < handle
                 obj.odometryTimer = timer('TimerFcn', ...
                     {@obj.odometryCallback, obj.odometrySub, tfmgr}, ...
                     'Period',rate,'ExecutionMode','fixedSpacing');
+                obj.odometryTimer.BusyMode = 'queue';
                 pause(2);
                 start(obj.odometryTimer);
             end
@@ -119,8 +122,6 @@ classdef OdometryListener < handle
         end
         
         function odometryCallback(obj, varargin)
-            global GAZEBO_SIM;
-            persistent time_prev;
             
             if (isa(varargin{1},'timer')==1)
                 message = varargin{3}.LatestMessage;
@@ -175,7 +176,7 @@ classdef OdometryListener < handle
                     obj.actual_qorientation)
             end
             
-            if (isempty(time_prev)==0)
+            if (isempty(obj.time_prev)==0)
                 %delta_t = time_cur - time_prev;
                 obj.odom_tform = TFManager.populateTransformStamped( ...
                     obj.odom_tform, obj.odom_position, ...
@@ -192,7 +193,7 @@ classdef OdometryListener < handle
                 tfmgr.setMessage(1,'map', parent_frame_odom, obj.actual_position, ...
                      obj.actual_qorientation);
             end
-            time_prev = time_cur;
+            obj.time_prev = time_cur;
         end
     end
 end

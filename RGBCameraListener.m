@@ -101,6 +101,7 @@ classdef RGBCameraListener < handle
                 obj.rgbCamTimer = timer('TimerFcn', ...
                     {@obj.rgbImageCallback, obj.rgbCamSub, tfmgr}, ...
                     'Period',rate,'ExecutionMode','fixedSpacing');
+                obj.rgbCamTimer.BusyMode = 'queue';
                 pause(2);
                 start(obj.rgbCamTimer);
             end
