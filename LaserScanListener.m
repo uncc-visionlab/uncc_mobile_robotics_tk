@@ -14,52 +14,38 @@
 %    Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 classdef LaserScanListener < handle
     properties
+        namespace
         %laserScanTopic
         laserScanSub
         laserScanTimer
         tf_baseNode
         failedMsgCount
-        MAX_BAD_MSGS        
+        MAX_BAD_MSGS
+
+        linehandle
     end
     
     methods (Static)
-        function plotScan(laserScanMessage, pose)
-            global START_TIME;
-            global GUI;
-            
-            persistent linehandle;
-            ranges = laserScanMessage.Ranges';
-            angles = laserScanMessage.AngleMin: ...
-                laserScanMessage.AngleIncrement:laserScanMessage.AngleMax;
-            %angles = -angles;
-            xVals=ranges.*cos(angles);
-            yVals=ranges.*sin(-angles);
-            if (exist('pose','var')==1)
-                [xVals, yVals] = pose.transform(xVals, yVals);
+        function ns_topic = extendTopic(topic, namespace) 
+            if (~isempty(namespace))
+                ns_topic = strcat('/', namespace, topic);
+            else
+                ns_topic = topic;
             end
-            if (isempty(linehandle)==0)
-                % remove previous scan plot
-                delete(linehandle);
-            end
-            %figure(1);
-            GUI.setFigure('MAP');
-            linehandle = plot(xVals,yVals,'.','MarkerSize',5);            
-            duration = rostime('now')-START_TIME;
-            duration_secs = duration.Sec+duration.Nsec*10^-9;
-            %uicontrol('Style', 'text', ...
-            %    'String', datestr(timeStruct.Data.time), ...
-            %    'Units','normalized', ...
-            %    'Position', [0.3 0.1 0.4 0.1]);
-            %text(100,100,datestr(timeStruct.Data.time),'Color','red','FontSize',14);
-            xlabelstr = sprintf('laser scan timestamp: %0.3f',duration_secs);
-            xlabel(xlabelstr);
-        end
+        end        
     end
     
     methods
         function obj = LaserScanListener(topicstr, namespace)
-            obj.laserScanSub = rossubscriber(topicstr,'BufferSize',10);
-            obj.tf_baseNode = 'base_link';
+            if (~isempty(namespace))
+                obj.namespace = namespace;
+            else
+                obj.namespace = [];
+            end
+            scan_topic = LaserScanListener.extendTopic(topicstr, obj.namespace);
+            
+            obj.laserScanSub = rossubscriber(scan_topic, 'BufferSize', 1);
+            obj.tf_baseNode = LaserScanListener.extendTopic('/base_link', obj.namespace);
             obj.failedMsgCount = 0;
             obj.MAX_BAD_MSGS = 5;            
         end
@@ -114,12 +100,12 @@ classdef LaserScanListener < handle
                 %map2basetf = tfmgr.tftree.getTransform('map', 'base_link', ...
                 %    laserScanMessage.Header.Stamp, 'Timeout', 2)
                 time_diff = abs(scanTime-tfTime);
-                if (time_diff < 0.1)
+                if (time_diff < 1 || true)
                     tVal = map2basetf.Transform.Translation;
                     qVal = map2basetf.Transform.Rotation;
                     pose = LocalPose([tVal.X tVal.Y tVal.Z], ...
                         [qVal.W qVal.X qVal.Y qVal.Z]);
-                    LaserScanListener.plotScan(laserScanMessage, pose);
+                    obj.plotScan(laserScanMessage, pose);
                 else
                     %disp('LaserScanListener could not get up-to-date map->base_link transform');
                 end
@@ -128,5 +114,35 @@ classdef LaserScanListener < handle
                 disp('LaserScanListener could not get map->base_link transform');
             end
         end
+        
+        function plotScan(obj, laserScanMessage, pose)
+            global START_TIME;
+            global GUI;
+            
+            ranges = laserScanMessage.Ranges';
+            angles = laserScanMessage.AngleMin: ...
+                laserScanMessage.AngleIncrement:laserScanMessage.AngleMax;
+            %angles = -angles;
+            xVals=ranges.*cos(angles);
+            yVals=ranges.*sin(angles);
+            if (exist('pose','var')==1)
+                [xVals, yVals] = pose.transform(xVals, yVals);
+            end
+            if (isempty(obj.linehandle)==0)
+                % remove previous scan plot
+                delete(obj.linehandle);
+            end
+            GUI.setFigure('MAP');
+            obj.linehandle = plot(xVals,yVals,'.','MarkerSize',5);            
+            duration = rostime('now')-START_TIME;
+            duration_secs = duration.Sec+duration.Nsec*10^-9;
+            %uicontrol('Style', 'text', ...
+            %    'String', datestr(timeStruct.Data.time), ...
+            %    'Units','normalized', ...
+            %    'Position', [0.3 0.1 0.4 0.1]);
+            %text(100,100,datestr(timeStruct.Data.time),'Color','red','FontSize',14);
+            xlabelstr = sprintf('%s laser scan timestamp: %0.3f',obj.namespace, duration_secs);
+            xlabel(xlabelstr);
+        end        
     end
 end

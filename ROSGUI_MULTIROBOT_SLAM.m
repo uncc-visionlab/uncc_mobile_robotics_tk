@@ -30,7 +30,6 @@ classdef ROSGUI_MULTIROBOT_SLAM < ROSGUI
             end
             
             GUI = ROSGUI();
-            %GUI.initFigure(namespace);
             
             if (robotics.ros.internal.Global.isNodeActive==1)
                 GUI.consolePrint('Shutting down any active ROS processes....');
@@ -81,7 +80,7 @@ classdef ROSGUI_MULTIROBOT_SLAM < ROSGUI
                 %world_gaz.removeAllTemporaryModels();
                 pauseSim(world_gaz);
                 phys = readPhysics(world_gaz);
-                phys.UpdateRate = 20; % 100 = full speed / real time
+                phys.UpdateRate = 50; % 100 = full speed / real time
                 setPhysics(world_gaz,phys);
                 resumeSim(world_gaz);
             end
@@ -133,22 +132,29 @@ classdef ROSGUI_MULTIROBOT_SLAM < ROSGUI
                 for botIdx=1:length(bots)
                     kobuki = bots(botIdx).kobuki;
                     
-                    if (isa(kobuki.rgbCamListener,'RGBLandmarkEstimator') || ...
-                            isa(kobuki.rgbCamListener,'RGBLandmarkEstimator_Student'))
-                        kobuki.rgbCamListener.setLandmarkPositions(world_mat.map_landmark_positions);
-                        kobuki.rgbCamListener.setLandmarkColors(world_mat.map_landmark_colors);
-                        kobuki.rgbCamListener.setLandmarkDiameter(2*0.05); % 10 cm diameter markers
-                        kobuki.rgbCamListener.setPublisher('landmarks');
-                        %disp(world_mat.map_landmark_positions);
+                    if (~isempty(kobuki.laserScanListener))
+                        kobuki.laserScanListener.setCallbackRate(0.3, world_mat.tfmgr);
                     end
-                    kobuki.rgbCamListener.setCallbackRate(4, world_mat.tfmgr);
-                    kobuki.rgbCamListener.getCameraInfo();
+
+                    if (~isempty(kobuki.rgbCamListener))
+                        kobuki.rgbCamListener.setCallbackRate(4, world_mat.tfmgr);
+                        kobuki.rgbCamListener.getCameraInfo();
+                        if (isa(kobuki.rgbCamListener,'RGBLandmarkEstimator') || ...
+                                isa(kobuki.rgbCamListener,'RGBLandmarkEstimator_Student'))
+                            kobuki.rgbCamListener.setLandmarkPositions(world_mat.map_landmark_positions);
+                            kobuki.rgbCamListener.setLandmarkColors(world_mat.map_landmark_colors);
+                            kobuki.rgbCamListener.setLandmarkDiameter(2*0.05); % 10 cm diameter markers
+                            kobuki.rgbCamListener.setPublisher('landmarks');
+                            %disp(world_mat.map_landmark_positions);
+                        end
+                    end
                     
-                    
-                    %kobuki.localizationEKF.setTransformer(world_mat.tfmgr);
-                    kobuki.localizationEKF.setCallbackRate(1, world_mat.tfmgr);
-                    kobuki.localizationEKF.setLandmarkTopic(strcat(bots(botIdx).name,'/landmarks'));
-                    kobuki.localizationEKF.setControlInputTopic(strcat(bots(botIdx).name,'/mobile_base/commands/velocity'));
+                    if (~isempty(kobuki.localizationEKF))
+                        %kobuki.localizationEKF.setTransformer(world_mat.tfmgr);
+                        kobuki.localizationEKF.setCallbackRate(1, world_mat.tfmgr);
+                        kobuki.localizationEKF.setLandmarkTopic(strcat(bots(botIdx).name,'/landmarks'));
+                        kobuki.localizationEKF.setControlInputTopic(strcat(bots(botIdx).name,'/mobile_base/commands/velocity'));
+                    end
                     
                     if (isa(kobuki.velocityController,'OdometryListener'))
                         kobuki.velocityController.setOdometryTopic(strcat(bots(botIdx).name,'/ekf_loc'))

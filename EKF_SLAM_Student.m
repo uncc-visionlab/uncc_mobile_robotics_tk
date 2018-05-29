@@ -9,7 +9,6 @@ classdef EKF_SLAM_Student < handle
         prior_covariance
         
         ekfTimer
-        tf_baseNode
         tfPoseFrame
         latestPose
         
@@ -63,8 +62,6 @@ classdef EKF_SLAM_Student < handle
             
             base_node = strcat(namespace,'/base_link_truth');
             loc_tform_ChildFrameId = strcat(namespace,'/loc_base_link');
-
-            obj.tf_baseNode = 'base_link_truth';
 
             obj.loc_tform = rosmessage('geometry_msgs/TransformStamped');
             obj.loc_tform.ChildFrameId = loc_tform_ChildFrameId;

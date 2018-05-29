@@ -3,11 +3,12 @@ classdef EKF_Localization_Student < handle
     %   Detailed explanation goes here
     
     properties
+        namespace
+        
         prior_mean
         prior_covariance
         
         ekfTimer
-        tf_baseNode
         latestPose
         
         landmarkSubscriber
@@ -30,10 +31,18 @@ classdef EKF_Localization_Student < handle
         
         M_t = [0.25 0; 0 0.25];
         Q_t = [0.2 0 0; 0 0.8*pi/180 0; 0 0 1];
+        
+        time_prev_controlInputCallback
+        time_prev_ekfLocalizationCallback        
     end
     
     methods
         function obj = EKF_Localization_Student(namespace)
+            if (exist('namespace','var'))
+                obj.namespace = namespace;
+            else
+                obj.namespace = [];
+            end            
             obj.prior_mean=[0 0 0]';
             obj.prior_covariance=zeros(3,3);
             obj.prior_covariance(1,1) = .4;
@@ -43,13 +52,14 @@ classdef EKF_Localization_Student < handle
             obj.pred_state = obj.prior_mean;
             obj.pred_state_cov = obj.prior_covariance;
             
-            obj.tf_baseNode = 'base_link_truth';
-
             obj.loc_tform = rosmessage('geometry_msgs/TransformStamped');
-            obj.loc_tform.ChildFrameId = 'loc_base_link';
+            loc_tform_ChildFrameId = strcat(namespace,'/loc_base_link');            
+            %obj.loc_tform.ChildFrameId = 'loc_base_link';
+            obj.loc_tform.ChildFrameId = loc_tform_ChildFrameId;
             obj.loc_tform.Header.FrameId = 'map';
            
-            obj.localizationPublisher = rospublisher('ekf_loc', ...
+            localization_topic = strcat(namespace,'/ekf_loc');
+            obj.localizationPublisher = rospublisher(localization_topic, ...
                 'nav_msgs/Odometry');
             obj.localization_odomMsg = rosmessage(obj.localizationPublisher);
             
@@ -70,13 +80,12 @@ classdef EKF_Localization_Student < handle
         end
         
         function ekfLocalizationCallback(obj, varargin)
-            persistent time_prev;
             tfmgr = varargin{3};            
             
             time_cur = rostime('now');
             obj.loc_position = [obj.pred_state(1) obj.pred_state(2) 0];
             obj.loc_qorientation = QuatLib.rpy2quat([0 0 obj.pred_state(3)]);
-            if (~isempty(time_prev))
+            if (~isempty(obj.time_prev_ekfLocalizationCallback))
                 obj.loc_tform = TFManager.populateTransformStamped( ...
                     obj.loc_tform, obj.loc_position, ...
                     obj.loc_qorientation, time_cur);                    
@@ -94,7 +103,7 @@ classdef EKF_Localization_Student < handle
                 obj.loc_stateRenderer.showState(obj.loc_position, ...
                     obj.loc_qorientation, obj.pred_state_cov(1:2,1:2));
             end
-            time_prev = time_cur;            
+            obj.time_prev_ekfLocalizationCallback = time_cur;            
         end
 
         function setControlInputTopic(obj, topic)
@@ -104,14 +113,14 @@ classdef EKF_Localization_Student < handle
         
         function controlInputCallback(obj, subscriber, msg)
             persistent time_prev;            
-            if (isempty(time_prev))
-                time_prev = rostime('now');                
+            if (isempty(obj.time_prev_controlInputCallback))
+                obj.time_prev_controlInputCallback = rostime('now');                
             end
             lin_vel = msg.Linear.X;
             ang_vel = msg.Angular.Z;
             time_cur = rostime('now');
-            duration = time_cur-time_prev;
-            deltaT = duration.Sec+duration.Nsec*10^-9;
+            duration = time_cur - obj.time_prev_controlInputCallback;
+            deltaT = duration.Sec + duration.Nsec*10^-9;
             if (deltaT <= 0)
                 return;
             end
@@ -130,14 +139,14 @@ classdef EKF_Localization_Student < handle
             
             obj.pred_state = obj.pred_state + motion;
             
-            time_prev = time_cur;
+            obj.time_prev_controlInputCallback = time_cur;
             if (obj.VERBOSE)
-                fprintf('EKFLocalization::Velocity control received (Linear,Angular)=(%0.2f m., %0.2f degrees)/sec\n', ...
-                    lin_vel, ang_vel*180/pi);
-                fprintf('EKFLocalization::Duration is %0.2f sec.\n', ...
-                    deltaT);
-                fprintf('EKFLocalization::Motion is (x,y,theta)=(%0.2f m., %0.2f m., %0.2f degrees)\n', ...
-                    motion(1), motion(2), motion(3)*180/pi);
+                fprintf('EKFLocalization for %s::Velocity control received (Linear,Angular)=(%0.2f m., %0.2f degrees)/sec\n', ...
+                    obj.namespace, lin_vel, ang_vel*180/pi);
+                fprintf('EKFLocalization for %s::Duration is %0.2f sec.\n', ...
+                    obj.namespace, deltaT);
+                fprintf('EKFLocalization for %s::Motion is (x,y,theta)=(%0.2f m., %0.2f m., %0.2f degrees)\n', ...
+                    obj.namespace, motion(1), motion(2), motion(3)*180/pi);
             end
         end
         
@@ -169,8 +178,8 @@ classdef EKF_Localization_Student < handle
             % ADD EKF UPDATE CODE HERE TO UPDATE THE STATE (obj.pred_state)
             
             if (obj.VERBOSE)
-                fprintf('EKFLocalization::Landmark %d at (Radius,Heading) (%0.2f m., %0.2f degrees)\n', ...
-                    idx, radius_m, phi*180/pi);
+                fprintf('EKFLocalization for %s::Landmark %d at (Radius,Heading) (%0.2f m., %0.2f degrees)\n', ...
+                    obj.namespace, idx, radius_m, phi*180/pi);
             end
         end
         

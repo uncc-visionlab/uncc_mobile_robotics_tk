@@ -52,10 +52,6 @@ classdef ROSGUI_SLAM < ROSGUI
             %set(h,'Color',[0.5 0.5 0.5]);
             
             ipaddress = '127.0.0.1';
-            %ipaddress = '10.16.30.10';
-            %ipaddress = '192.168.11.178';
-            %ipaddress = '192.168.1.10';
-            %ipaddress = '10.22.49.141';
             if (robotics.ros.internal.Global.isNodeActive==0)
                 GUI.consolePrint(strcat(...
                     'Initializing ROS node with master IP .... ', ...
@@ -109,7 +105,6 @@ classdef ROSGUI_SLAM < ROSGUI
                     kobuki = Kobuki();
                 end
                 world_mat.tfmgr.addKobuki('map','odom');                
-                %world_mat.kobuki = kobuki;
                 
                 if (isempty(world_mat.wayPoints) && 1==0)
                     pause(2);

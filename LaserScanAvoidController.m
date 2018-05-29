@@ -23,8 +23,8 @@ classdef LaserScanAvoidController < LaserScanListener
     
     methods
         function obj = LaserScanAvoidController(namespace)
-            obj@LaserScanListener();
-            obj.velocityPub = rospublisher('/mobile_base/commands/velocity');
+            obj@LaserScanListener(namespace);
+            obj.velocityPub = LaserScanListener.extendTopic('/mobile_base/commands/velocity', namespace);
             obj.velocityMsg = rosmessage(obj.velocityPub);
         end
         
@@ -38,7 +38,7 @@ classdef LaserScanAvoidController < LaserScanListener
                 laserScanMessage = varargin{1}.LatestMessage;
                 tfmgr = varargin{2};
             end
-            if (tfmgr.tftree.canTransform('map', 'base_link'))
+            if (tfmgr.tftree.canTransform('map', obj.tf_baseNode))
                 %tfmgr.tftree.waitForTransform('map', 'base_link');
                 %map2basetf = tfmgr.tftree.getTransform('map', 'base_link');
                 %tVal = map2basetf.Transform.Translation;

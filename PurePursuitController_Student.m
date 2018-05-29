@@ -39,6 +39,12 @@ classdef PurePursuitController_Student < OdometryPathRecorder
         
         VISUALIZE_ALGORITHM
         VISUALIZE_METRICS
+
+        actual_path
+        path_error
+        
+        tris_startend
+        tri_goal
     end
     methods (Static)
         function pathPt = closestPointOnSegment(p1, p2, queryPt)
@@ -96,7 +102,6 @@ classdef PurePursuitController_Student < OdometryPathRecorder
         
         function odometryCallback(obj, varargin)
             global START_TIME GUI;
-            persistent actual_path path_error;
             
             if (isa(varargin{1},'timer')==1)
                 tfmgr = varargin{4};
@@ -120,15 +125,15 @@ classdef PurePursuitController_Student < OdometryPathRecorder
                 disp('PurePursuitController_Student::Could not get map->base_link transform');
             end
             if (obj.VISUALIZE_METRICS)
-                if (isempty(actual_path)==0)
+                if (isempty(obj.actual_path)==0)
                     % remove previous plots
-                    delete(actual_path);
+                    delete(obj.actual_path);
                     if (obj.goalPtIdx > 0 && obj.numPathPts > 1)
-                        delete(path_error);
+                        delete(obj.path_error);
                     end
                 end
                 GUI.setFigure('MAP');
-                actual_path = plot(obj.actual_pathPts(1:obj.numPathPts,1), ...
+                obj.actual_path = plot(obj.actual_pathPts(1:obj.numPathPts,1), ...
                     obj.actual_pathPts(1:obj.numPathPts,2), ':', 'Color', [1 0.5 0]);
                 if (obj.goalPtIdx > 0 && obj.numPathPts > 1)
                     endPt = obj.wayPoints(obj.goalPtIdx,:)';
@@ -145,7 +150,7 @@ classdef PurePursuitController_Student < OdometryPathRecorder
                     obj.pathError(obj.numPathPts) = norm(closestPt-queryPt);
                     totalError = trapz(obj.recorded_times(1:obj.numPathPts), ...
                         obj.pathError(1:obj.numPathPts));
-                    path_error = plot(obj.recorded_times(1:obj.numPathPts), ...
+                    obj.path_error = plot(obj.recorded_times(1:obj.numPathPts), ...
                         obj.pathError(1:obj.numPathPts),'r-');
                     xlabelstr = sprintf('Total error: %0.3f Elapsed time: %0.3f (secs)', ...
                         totalError, obj.recorded_times(obj.numPathPts));
@@ -242,7 +247,6 @@ classdef PurePursuitController_Student < OdometryPathRecorder
         
         function goalPt = findGoalPoint(obj, queryPt)
             global GUI;
-            persistent tris_startend tri_goal;
             
             endPt = obj.wayPoints(obj.goalPtIdx,:)';
             if (obj.goalPtIdx-1 >= 1)
@@ -254,17 +258,17 @@ classdef PurePursuitController_Student < OdometryPathRecorder
             [closestPt, goalPt] = obj.getClosestAndGoalPointsOnSegment( startPt, endPt, queryPt);
             
             if (obj.VISUALIZE_ALGORITHM==true)
-                if (isempty(tris_startend)==0)
+                if (isempty(obj.tris_startend)==0)
                     % remove previous scan plot
-                    delete(tris_startend);
-                    delete(tri_goal);
+                    delete(obj.tris_startend);
+                    delete(obj.tri_goal);
                 end
                 %figure(1);
                 GUI.setFigure('MAP');
                 polyPts=[startPt queryPt closestPt startPt queryPt endPt closestPt];
-                tris_startend = plot(polyPts(1,:),polyPts(2,:),'b-');
+                obj.tris_startend = plot(polyPts(1,:),polyPts(2,:),'b-');
                 polyPts=[closestPt queryPt goalPt];
-                tri_goal = plot(polyPts(1,:),polyPts(2,:),'r-');
+                obj.tri_goal = plot(polyPts(1,:),polyPts(2,:),'r-');
             end
         end
         

@@ -14,8 +14,8 @@
 %    Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 classdef RGBCameraListener < handle
     properties
-        %rgbCamTopic
         namespace
+        %rgbCamTopic
         rgbCamSub
         rgbCamTimer
         rgbCamInfoSub
@@ -58,7 +58,7 @@ classdef RGBCameraListener < handle
             xlabelstr = sprintf('Image timestamp: %0.3f',duration_secs);
             xlabel(xlabelstr);
         end
-                    
+        
         function ns_topic = extendTopic(topic, namespace) 
             if (~isempty(namespace))
                 ns_topic = strcat('/', namespace, topic);
