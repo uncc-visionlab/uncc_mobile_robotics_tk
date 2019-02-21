@@ -184,29 +184,11 @@ classdef PurePursuitController_Student < OdometryPathRecorder
             if (true)
                 obj.velocityMsg.Linear.X = 0.0;
                 if (mod(floor(duration_secs/30),2)==0)
-                    obj.velocityMsg.Angular.Z = 0.07;
+                    obj.velocityMsg.Angular.Z = 0.27;
                 else
-                    obj.velocityMsg.Angular.Z = -0.07;
+                    obj.velocityMsg.Angular.Z = -0.27;
                 end
                 send(obj.velocityPub, obj.velocityMsg);
-                return;
-            end
-            if (false)
-                obj.velocityMsg.Angular.Z = 0.07;
-                if (duration_secs < 20)
-                    obj.velocityMsg.Linear.X = 0;
-                elseif (duration_secs < 120)
-                    obj.velocityMsg.Linear.X = 0.01;
-                elseif (duration_secs < 180)
-                    obj.velocityMsg.Linear.X = 0.05;
-                elseif (duration_secs < 240)
-                    obj.velocityMsg.Linear.X = 0.05;
-                elseif (duration_secs < 300)
-                    obj.velocityMsg.Linear.X = 0.07;
-                end
-                if (obj.velocityMsg.Linear.X > 0)
-                    send(obj.velocityPub, obj.velocityMsg);
-                end
                 return;
             end
             if (obj.goalPtIdx==0)
