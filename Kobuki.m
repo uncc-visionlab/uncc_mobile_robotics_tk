@@ -33,13 +33,19 @@ classdef Kobuki < handle
     
     methods
         function obj = Kobuki(namespace)
-            obj.laserScanListener = LaserScanListener('/scan');
-            obj.rgbCamListener = RGBCameraListener();
+            if (exist('namespace','var')==0)
+                namespace = 'mobile_base';                
+            end
+            if (strcmp(namespace,'mobile_base'))
+                namespace=[];
+            end            
+            %obj.laserScanListener = LaserScanListener('/scan');
+            %obj.rgbCamListener = RGBCameraListener();
             %obj.odometryListener = OdometryPathRecorder(obj);
-            obj.odometryListener = OdometryListener(obj);
+            %obj.odometryListener = OdometryListener(obj);
             %obj.velocityController = LaserScanAvoidController();
             %obj.odometryEKF = OdomEstimationNode(true, true, false, false);
-            obj.velocityController = PurePursuitController(obj);
+            obj.velocityController = PurePursuitController_Student(obj, namespace);
             %obj.velocityController = PurePursuitController_Student(obj);
         end
                         
