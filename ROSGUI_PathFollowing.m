@@ -13,19 +13,16 @@ classdef ROSGUI_PathFollowing < ROSGUI
             global START_TIME;
             global GAZEBO_SIM;
             global GUI;
-            addpath('./bfl/pdf');
-            addpath('./bfl/model');
-            addpath('./robot_pose_ekf');
+
             SIMULATE = true;
+            ACTIVATE_KOBUKI=true;
             if (SIMULATE)
                 WORLD_MAP_INDEX=1;
                 BUILD_GAZEBO_WORLD=true;
-                ACTIVATE_KOBUKI=true;
             else
                 GAZEBO_SIM = false;
                 WORLD_MAP_INDEX=0;
                 BUILD_GAZEBO_WORLD=false;
-                ACTIVATE_KOBUKI=false;
             end
             
             GUI = ROSGUI();
@@ -46,13 +43,15 @@ classdef ROSGUI_PathFollowing < ROSGUI
             set(h,'Visible','on');
             %h = GUI.getFigure('IMAGE');
             %set(h,'Visible','on');
-            h = GUI.getFigure('ERROR');
-            set(h,'Visible','on');
+            if (GAZEBO_SIM==true)
+                h = GUI.getFigure('ERROR');
+                set(h,'Visible','on');
+            end
             
             ipaddress = '127.0.0.1';
             %ipaddress = '10.22.77.34';
-            %ipaddress = '192.168.11.178';
-            %ipaddress = '10.16.30.11';
+            %ipaddress = '192.168.22.140';
+            %ipaddress = '10.22.64.136';
             if (robotics.ros.internal.Global.isNodeActive==0)
                 GUI.consolePrint(strcat(...
                     'Initializing ROS node with master IP .... ', ...
@@ -71,7 +70,7 @@ classdef ROSGUI_PathFollowing < ROSGUI
                 end
             end
             START_TIME = rostime('now');
-
+            
             if (BUILD_GAZEBO_WORLD)
                 GAZEBO_SIM = true;
                 world_gaz = WorldBuilder_Gazebo();
@@ -86,6 +85,9 @@ classdef ROSGUI_PathFollowing < ROSGUI
                 %world_gaz.removeAllTemporaryModels();
             end
             
+            % TEST WAYPOINTS
+            %world_mat.wayPoints = [0 0; 1 0];
+            
             if (ACTIVATE_KOBUKI)
                 GUI.consolePrint('Initializing a ROS TF Transform Tree....');
                 world_mat.tfmgr = TFManager(3);
@@ -95,9 +97,14 @@ classdef ROSGUI_PathFollowing < ROSGUI
                     veloctiyMsg.Linear.X = 0.1;
                     send(velocityPub, velocityMsg);
                 end
-                kobuki = KobukiSim(world_gaz);
+                
+                if (SIMULATE==true)
+                    kobuki = KobukiSim(world_gaz);
+                else
+                    kobuki = Kobuki();
+                end
+                
                 world_mat.tfmgr.addKobuki('map','odom');
-                %world_mat.kobuki = kobuki;
                 
                 if (isempty(world_mat.wayPoints) && 1==0)
                     pause(2);
@@ -108,7 +115,7 @@ classdef ROSGUI_PathFollowing < ROSGUI
                     position = kobuki.getState();
                     world_mat.wayPoints = [position(1:2); ...
                         world_mat.wayPoints];
-                elseif (WORLD_MAP_INDEX==1)
+                elseif (WORLD_MAP_INDEX==1 && SIMULATE == true)
                     position = kobuki.getState();
                     world_mat.wayPoints = [position(1:2); ...
                         2 2; -2 -2; 2 -2; -2 2];
@@ -119,18 +126,22 @@ classdef ROSGUI_PathFollowing < ROSGUI
                     GUI.setFigure('MAP');
                     path_handle = plot(path(:,1), path(:,2),'k--d');
                 end
+                
                 % seconds (odometry)
                 %kobuki.odometryListener.setCallbackRate('fastest');
-                %kobuki.odometryListe ner.setCallbackRate(0.1, world_mat.tfmgr);
+                %kobuki.odometryListener.setCallbackRate(0.1, world_mat.tfmgr);
                 %kobuki.laserScanListener.setCallbackRate(0.5, world_mat.tfmgr);
                 %kobuki.rgbCamListener.setCallbackRate(4, world_mat.tfmgr);
-                kobuki.rgbCamListener.getCameraInfo();
+                %kobuki.rgbCamListener.getCameraInfo();
                 %kobuki.odometryEKF.setTransformer(world_mat.tfmgr);
                 
                 if (isa(kobuki.velocityController,'PurePursuitController_Student') || ...
-                    isa(kobuki.velocityController,'PurePursuitController'))
+                        isa(kobuki.velocityController,'PurePursuitController'))
                     disp('Sending waypoints to pure pursuit controller.');
                     kobuki.velocityController.setWaypoints(world_mat.wayPoints);
+                    if (SIMULATE == false)
+                        kobuki.velocityController.VISUALIZE_METRICS = false;
+                    end
                 end
                 
                 if (~isempty(kobuki.velocityController))
@@ -138,6 +149,6 @@ classdef ROSGUI_PathFollowing < ROSGUI
                 end
             end
         end
-    end    
+    end
 end
 
