@@ -46,9 +46,6 @@ classdef WorldBuilder_MATLAB < handle
         
         tfmgr
         
-        % Kobuki robot class
-        %kobuki
-        
         randomLocationButton
         resetSimulationButton
     end
