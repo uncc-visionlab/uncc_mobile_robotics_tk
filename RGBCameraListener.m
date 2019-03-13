@@ -39,7 +39,11 @@ classdef RGBCameraListener < handle
             r=reshape(r,imgMsg.Width,imgMsg.Height)';
             g=reshape(g,imgMsg.Width,imgMsg.Height)';
             b=reshape(b,imgMsg.Width,imgMsg.Height)';
-            imgRGB = cat(3,r,g,b);
+            if (ispc)
+            	imgRGB = cat(3,b,g,r);
+            else
+            	imgRGB = cat(3,r,g,b);
+            end
         end
         
         function showRGBImage(imgRGB, namespace)
