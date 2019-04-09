@@ -50,7 +50,8 @@ classdef ROSGUI_Localize < ROSGUI
             h = GUI.getFigure('ERROR');
             set(h,'Visible','on');
             
-            ipaddress = '127.0.0.1';
+            %ipaddress = '127.0.0.1';
+            ipaddress = '10.16.30.9';
             if (robotics.ros.internal.Global.isNodeActive==0)
                 GUI.consolePrint(strcat(...
                     'Initializing ROS node with master IP .... ', ...
@@ -133,10 +134,16 @@ classdef ROSGUI_Localize < ROSGUI
                 %kobuki.laserScanListener.setCallbackRate(2, world_mat.tfmgr);
                 
                 if (isa(kobuki.rgbCamListener,'RGBLandmarkEstimator') || ...
-                        isa(kobuki.rgbCamListener,'RGBLandmarkEstimator_Student'))
+                        isa(kobuki.rgbCamListener,'RGBLandmarkEstimator_Student') || ...
+                        isa(kobuki.rgbCamListener,'RGBLandmarkEstimatorAdvanced') || ...
+                        isa(kobuki.rgbCamListener,'RGBLandmarkEstimatorAdvanced_Student'))
                     kobuki.rgbCamListener.setLandmarkPositions(world_mat.map_landmark_positions);
-                    kobuki.rgbCamListener.setLandmarkColors(world_mat.map_landmark_colors);
-                    kobuki.rgbCamListener.setLandmarkDiameter(2*0.05); % 10 cm diameter markers
+                    if (~isa(kobuki.rgbCamListener,'RGBLandmarkEstimatorAdvanced'))
+                        kobuki.rgbCamListener.setLandmarkColors(world_mat.map_landmark_colors);
+                        kobuki.rgbCamListener.setLandmarkDiameter(2*0.05); % 10 cm diameter markers
+                    else
+                        kobuki.rgbCamListener.setLandmarkDiameter(0.05); % 5 cm diameter markers                        
+                    end
                     kobuki.rgbCamListener.setPublisher('landmarks');
                 end
                 kobuki.rgbCamListener.setCallbackRate(4, world_mat.tfmgr);
