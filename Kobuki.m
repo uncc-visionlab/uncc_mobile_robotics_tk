@@ -32,21 +32,25 @@ classdef Kobuki < handle
     end
     
     methods
-        function obj = Kobuki(namespace)
-            if (exist('namespace','var')==0)
+        function obj = Kobuki(namespace, bagfile)
+            if (exist('namespace','var')==0 || isempty(namespace))
                 namespace = 'mobile_base';                
+            end
+            if (exist('bagfile','var')==0)
+                bagfile = false;
             end
             if (strcmp(namespace,'mobile_base'))
                 namespace=[];
             end            
             %obj.laserScanListener = LaserScanListener('/scan');
-            %obj.rgbCamListener = RGBCameraListener();
-            %obj.odometryListener = OdometryPathRecorder(obj);
+            obj.rgbCamListener = RGBCameraListener(namespace);
+            %obj.odometryListener = OdometryPathRecorder(obj, namespace);
             %obj.odometryListener = OdometryListener(obj);
             %obj.velocityController = LaserScanAvoidController();
             %obj.odometryEKF = OdomEstimationNode(true, true, false, false);
-            obj.velocityController = PurePursuitController_Student(obj, namespace);
-            %obj.velocityController = PurePursuitController_Student(obj);
+            %obj.velocityController = PurePursuitController(obj, namespace);
+            obj.velocityController = PurePursuitController_Student(obj, namespace, bagfile);
+            %obj.velocityController = PIDController(obj, namespace, bagfile);
         end
                         
         function sendVelocityCommand(kobuki, velocityMsg)
