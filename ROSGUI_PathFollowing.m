@@ -51,7 +51,7 @@ classdef ROSGUI_PathFollowing < ROSGUI
             end
             
             %ipaddress = '127.0.0.1';
-            ipaddress = '10.16.30.14';
+            ipaddress = '10.16.30.15';
             %ipaddress = '192.168.1.101';
             %ipaddress = '10.22.64.136';
             %ipaddress = '192.168.22.107';
@@ -104,10 +104,12 @@ classdef ROSGUI_PathFollowing < ROSGUI
                 if (SIMULATE==true)
                     kobuki = KobukiSim(world_gaz);
                 else
-                    kobuki = Kobuki([],BAGFILE);
+                    kobuki = Kobuki();
                 end
                 
-                %world_mat.tfmgr.addKobuki('map','odom');
+                if (~BAGFILE)
+                    world_mat.tfmgr.addKobuki('map','odom');
+                end
                 
                 world_mat.wayPoints = [0 0; ...
                         1.7 0; 2 -6; 1.7 0; 0 0];

@@ -35,7 +35,6 @@ classdef PIDController < OdometryPathRecorder
         
         VISUALIZE_ALGORITHM
         VISUALIZE_METRICS
-        BAGFILE
         
         actual_path
         path_error
@@ -79,17 +78,11 @@ classdef PIDController < OdometryPathRecorder
     end
     
     methods
-        function obj = PIDController(stateProvider, namespace, bagfile)
-            if (exist('bagfile','var') == false)
-                bagfile = false;
-            end
+        function obj = PIDController(stateProvider, namespace)
             obj@OdometryPathRecorder(stateProvider, namespace);
-            obj.BAGFILE = bagfile;
-            if (obj.BAGFILE == false)
-                topic_vel = OdometryListener.extendTopic('/mobile_base/commands/velocity', namespace);
-                obj.velocityPub = rospublisher(topic_vel);
-                obj.velocityMsg = rosmessage(obj.velocityPub);
-            end
+            topic_vel = OdometryListener.extendTopic('/mobile_base/commands/velocity', namespace);
+            obj.velocityPub = rospublisher(topic_vel,'geometry_msgs/Twist');
+            obj.velocityMsg = rosmessage(obj.velocityPub);
             obj.closest_pathPts = zeros(obj.MAX_VALUES,3);
             obj.goalRadius = 0.1;           % m
             obj.maxAngularVelocity = pi/4;  % rad/sec
@@ -120,7 +113,7 @@ classdef PIDController < OdometryPathRecorder
                     [qVal.W qVal.X qVal.Y qVal.Z]);
                 duration = rostime('now')-START_TIME;
                 duration_secs = duration.Sec+duration.Nsec*10^-9;
-                if (duration_secs > 10 && obj.BAGFILE == false)
+                if (duration_secs > 10)
                     obj.doControl(pose);
                 end
             else

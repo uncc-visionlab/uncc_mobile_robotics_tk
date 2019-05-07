@@ -26,31 +26,38 @@ classdef Kobuki < handle
         laserScanListener
         rgbCamListener        
         odometryListener
-        odometryEKF
+        localizationEKF
         
         velocityController
     end
     
     methods
-        function obj = Kobuki(namespace, bagfile)
+        function obj = Kobuki(namespace)
             if (exist('namespace','var')==0 || isempty(namespace))
                 namespace = 'mobile_base';                
-            end
-            if (exist('bagfile','var')==0)
-                bagfile = false;
             end
             if (strcmp(namespace,'mobile_base'))
                 namespace=[];
             end            
             %obj.laserScanListener = LaserScanListener('/scan');
-            obj.rgbCamListener = RGBCameraListener(namespace);
+            
+            %obj.rgbCamListener = RGBCameraListener(namespace);
+            %obj.rgbCamListener = RGBLandmarkEstimator(namespace);
+            obj.rgbCamListener = RGBLandmarkEstimator_Student(namespace);
+            %obj.rgbCamListener = RGBLandmarkEstimatorAdvanced(namespace);
+
             %obj.odometryListener = OdometryPathRecorder(obj, namespace);
             %obj.odometryListener = OdometryListener(obj);
-            %obj.velocityController = LaserScanAvoidController();
-            %obj.odometryEKF = OdomEstimationNode(true, true, false, false);
-            %obj.velocityController = PurePursuitController(obj, namespace);
-            obj.velocityController = PurePursuitController_Student(obj, namespace, bagfile);
+            
+            %obj.velocityController = LaserScanAvoidController();            
+            obj.velocityController = PurePursuitController(obj, namespace);
+            %obj.velocityController = PurePursuitController_Student(obj, namespace);
             %obj.velocityController = PIDController(obj, namespace, bagfile);
+
+            %obj.localizationEKF = EKF_Localization(namespace);
+            %obj.localizationEKF = EKF_Localization_Student(namespace);
+            %obj.localizationEKF = EKF_SLAM_Student(namespace);
+            obj.localizationEKF = EKF_SLAM(namespace);
         end
                         
         function sendVelocityCommand(kobuki, velocityMsg)

@@ -18,15 +18,15 @@ classdef ROSGUI_SLAM < ROSGUI
             %addpath('./bfl/model');
             %addpath('./robot_pose_ekf');
             SIMULATE = true;
+            ACTIVATE_KOBUKI = true;
+            BAGFILE = false;
             if (SIMULATE)
                 WORLD_MAP_INDEX = 3;
                 BUILD_GAZEBO_WORLD = true;
-                ACTIVATE_KOBUKI = true;
             else
                 GAZEBO_SIM = false;
                 WORLD_MAP_INDEX = 0;
                 BUILD_GAZEBO_WORLD = false;
-                ACTIVATE_KOBUKI = false;
             end
             
             GUI = ROSGUI();
@@ -43,15 +43,18 @@ classdef ROSGUI_SLAM < ROSGUI
             world_mat = WorldBuilder_MATLAB();
             GUI.world_mat = world_mat;
             
-            h = GUI.getFigure('ERROR');
-            set(h,'Visible','on');
+            if (GAZEBO_SIM==true)
+                h = GUI.getFigure('ERROR');
+                set(h,'Visible','on');
+            end
             h = GUI.getFigure('IMAGE');
             set(h,'Visible','on');
             h = GUI.getFigure('MAP');
             set(h,'Visible','on');
             %set(h,'Color',[0.5 0.5 0.5]);
             
-            ipaddress = '127.0.0.1';
+            %ipaddress = '127.0.0.1';
+            ipaddress = '10.16.30.8';
             if (robotics.ros.internal.Global.isNodeActive==0)
                 GUI.consolePrint(strcat(...
                     'Initializing ROS node with master IP .... ', ...
@@ -70,7 +73,7 @@ classdef ROSGUI_SLAM < ROSGUI
                 end
             end
             START_TIME = rostime('now');
-
+            
             if (BUILD_GAZEBO_WORLD)
                 GAZEBO_SIM = true;
                 world_gaz = WorldBuilder_Gazebo();
@@ -104,7 +107,12 @@ classdef ROSGUI_SLAM < ROSGUI
                 else
                     kobuki = Kobuki();
                 end
-                world_mat.tfmgr.addKobuki('map','odom');                
+                if (~BAGFILE)
+                    world_mat.tfmgr.addKobuki('map','odom');
+                else
+                    world_mat.wayPoints = [0 0; ...
+                        1.7 0; 2 -6; 1.7 0; 0 0];
+                end
                 
                 if (isempty(world_mat.wayPoints) && 1==0)
                     pause(2);
@@ -138,38 +146,56 @@ classdef ROSGUI_SLAM < ROSGUI
                 %kobuki.odometryListener.setCallbackRate(0.5, world_mat.tfmgr);
                 %kobuki.laserScanListener.setCallbackRate(2, world_mat.tfmgr);
                 
-                if (isa(kobuki.rgbCamListener,'RGBLandmarkEstimator') || ...
-                        isa(kobuki.rgbCamListener,'RGBLandmarkEstimator_Student'))
-                    kobuki.rgbCamListener.setLandmarkPositions(world_mat.map_landmark_positions);
-                    kobuki.rgbCamListener.setLandmarkColors(world_mat.map_landmark_colors);
-                    kobuki.rgbCamListener.setLandmarkDiameter(2*0.05); % 10 cm diameter markers
-                    kobuki.rgbCamListener.setPublisher('landmarks');
+                if (isa(kobuki.rgbCamListener,'RGBCameraListener'))
+                    %kobuki.velocityController.setPoseFrame('loc_base_link');
+                    if (isa(kobuki.rgbCamListener,'RGBLandmarkEstimator') || ...
+                            isa(kobuki.rgbCamListener,'RGBLandmarkEstimator_Student'))
+                        if (SIMULATE)
+                            kobuki.rgbCamListener.setLandmarkPositions(world_mat.map_landmark_positions);
+                        end
+                        if (~isa(kobuki.rgbCamListener,'RGBLandmarkEstimatorAdvanced'))
+                            kobuki.rgbCamListener.setLandmarkColors(world_mat.map_landmark_colors);
+                            kobuki.rgbCamListener.setLandmarkDiameter(2*0.05); % 10 cm diameter markers
+                        else
+                            kobuki.rgbCamListener.setLandmarkDiameter(0.05); % 5 cm diameter markers
+                        end
+                        kobuki.rgbCamListener.setPublisher('landmarks');
+                    end
+                    kobuki.rgbCamListener.setCallbackRate(3, world_mat.tfmgr);
+                    kobuki.rgbCamListener.getCameraInfo();
                 end
-                kobuki.rgbCamListener.setCallbackRate(4, world_mat.tfmgr);
-                kobuki.rgbCamListener.getCameraInfo();
                 
-                %kobuki.localizationEKF.setTransformer(world_mat.tfmgr);
-                kobuki.localizationEKF.setCallbackRate(1, world_mat.tfmgr);
-                kobuki.localizationEKF.setLandmarkTopic('landmarks');
-                kobuki.localizationEKF.setControlInputTopic('/mobile_base/commands/velocity');
-                
-                if (isa(kobuki.velocityController,'OdometryListener'))
-                    kobuki.velocityController.setOdometryTopic('ekf_loc')
-                    kobuki.velocityController.maxLinearVelocity = 0.1;
+                if (isa(kobuki.localizationEKF,'EKF_SLAM_Student') || ...
+                        isa(kobuki.localizationEKF,'EKF_SLAM'))
+                    %kobuki.localizationEKF.setTransformer(world_mat.tfmgr);
+                    kobuki.localizationEKF.setCallbackRate(1, world_mat.tfmgr);
+                    kobuki.localizationEKF.setLandmarkTopic('landmarks');
+                    kobuki.localizationEKF.setControlInputTopic('/mobile_base/commands/velocity');
+                    if (isa(kobuki.velocityController,'OdometryListener'))
+                        %kobuki.velocityController.setOdometryTopic('ekf_loc')
+                        %kobuki.velocityController.maxLinearVelocity = 0.1;
+                    end
+                    if (isa(kobuki.velocityController,'PurePursuitController_Student') || ...
+                            isa(kobuki.velocityController,'PurePursuitController'))
+                        kobuki.velocityController.setPoseFrame('/loc_base_link');
+                    end
+                    if (isa(kobuki.rgbCamListener,'RGBCameraListener'))
+                        %kobuki.velocityController.setPoseFrame('loc_base_link');
+                    end
                 end
+                
                 
                 if (isa(kobuki.velocityController,'PurePursuitController_Student') || ...
                         isa(kobuki.velocityController,'PurePursuitController'))
                     disp('Sending waypoints to pure pursuit controller.');
                     kobuki.velocityController.setWaypoints(world_mat.wayPoints);
-                    kobuki.velocityController.setPoseFrame('loc_base_link');
                 end
                 
                 if (~isempty(kobuki.velocityController))
-                    kobuki.velocityController.setCallbackRate(0.3, world_mat.tfmgr);
+                    kobuki.velocityController.setCallbackRate(.1, world_mat.tfmgr);
                 end
             end
         end
-    end   
+    end
 end
 

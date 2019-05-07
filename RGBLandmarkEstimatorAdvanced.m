@@ -10,6 +10,7 @@ classdef RGBLandmarkEstimatorAdvanced < RGBLandmarkEstimator
         %STATE_EVOLUTION_MODEL
         gaussFilter
     end
+    
     methods
         function obj = RGBLandmarkEstimatorAdvanced(namespace)
             obj@RGBLandmarkEstimator(namespace);
@@ -28,7 +29,7 @@ classdef RGBLandmarkEstimatorAdvanced < RGBLandmarkEstimator
             obj.NLOG_PROB_THRESHOLD = 13;
             % Detection Region size threshold for pixel region classified as object
             % detected_object_class_c = region.area_pixels > MIN_BALL_SIZE_PIXELS
-            obj.MIN_BALL_SIZE_PIXELS = 25;
+            obj.MIN_BALL_SIZE_PIXELS = 225;
             % Maximum allowable error between a track and a detection
             % Used to assign detected object to existing object tracks
             %obj.UNASSIGNED_COST = 99;
@@ -51,10 +52,14 @@ classdef RGBLandmarkEstimatorAdvanced < RGBLandmarkEstimator
             global GUI;
             physical_diameter_m = obj.landmarkDiameter;
             RGBCameraListener.showRGBImage(imgRGB, obj.namespace);
-            [idxs,centers,radii, signatures] = obj.findColoredSpheres(...
-                imgRGB, obj.landmarkColors);
-            [idxs,centers,radii, signatures] = RGBLandmarkEstimator.findColoredSpheres( ...
-                imgRGB, obj.landmarkColors);
+            try
+                [idxs,centers,radii, signatures] = obj.findColoredSpheres(...
+                    imgRGB, obj.landmarkColors);
+            catch exception
+                fprintf(1,'Error: %s\n',getReport(exception));
+            end
+            %[idxs,centers,radii, signatures] = RGBLandmarkEstimator.findColoredSpheres( ...
+            %    imgRGB, obj.landmarkColors);
             GUI.setFigure('IMAGE', obj.namespace);
             for lidx=1:length(idxs)
                 idx=idxs(lidx);
@@ -159,6 +164,9 @@ classdef RGBLandmarkEstimatorAdvanced < RGBLandmarkEstimator
             [values, classIdxs] = min(classLogProb');
             classIdxs(values > obj.NLOG_PROB_THRESHOLD) = 10;
             colorIdxs = find(classIdxs < 10);
+            if (length(colorIdxs) == 0)
+                return;
+            end
             img_vals = reshape(img_rgb(:,:,1:3),rows*cols,comps);
             labelVals = zeros(rows*cols,1);
             for pixIdx=1:length(colorIdxs)

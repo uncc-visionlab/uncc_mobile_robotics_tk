@@ -47,12 +47,14 @@ classdef KobukiSim < ExampleHelperGazeboSpawnedModel
             %obj.rgbCamListener = RGBCameraListener(namespace);
             %obj.rgbCamListener = RGBLandmarkEstimator(namespace);
             obj.rgbCamListener = RGBLandmarkEstimator_Student(namespace);
+            %obj.rgbCamListener = RGBLandmarkEstimatorAdvanced(namespace);
             
             %obj.odometryListener = OdometryPathRecorder(obj, namespace);
             %obj.odometryListener = OdometryListener(obj, namespace);
             
             %obj.velocityController = LaserScanAvoidController(namespace);
             
+            %obj.velocityController = PIDController(obj, namespace);
             %obj.velocityController = PurePursuitController(obj, namespace);
             obj.velocityController = PurePursuitController_Student(obj, namespace);
             

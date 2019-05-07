@@ -39,7 +39,6 @@ classdef PurePursuitController_Student < OdometryPathRecorder
         
         VISUALIZE_ALGORITHM
         VISUALIZE_METRICS
-        BAGFILE
 
         actual_path
         path_error
@@ -83,17 +82,11 @@ classdef PurePursuitController_Student < OdometryPathRecorder
     end
     
     methods
-        function obj = PurePursuitController_Student(stateProvider, namespace, bagfile)
-            if (exist('bagfile','var') == false)
-                bagfile = false;
-            end            
+        function obj = PurePursuitController_Student(stateProvider, namespace)
             obj@OdometryPathRecorder(stateProvider, namespace);
-            obj.BAGFILE = bagfile;
-            if (obj.BAGFILE == false)
-                topic_vel = OdometryListener.extendTopic('/mobile_base/commands/velocity', namespace);
-                obj.velocityPub = rospublisher(topic_vel);
-                obj.velocityMsg = rosmessage(obj.velocityPub);
-            end
+            topic_vel = OdometryListener.extendTopic('/mobile_base/commands/velocity', namespace);
+            obj.velocityPub = rospublisher(topic_vel,'geometry_msgs/Twist');
+            obj.velocityMsg = rosmessage(obj.velocityPub);
             obj.closest_pathPts = zeros(obj.MAX_VALUES,3);
             obj.goalRadius = 0.1;           % m
             obj.maxAngularVelocity = pi/4;  % rad/sec
@@ -125,7 +118,7 @@ classdef PurePursuitController_Student < OdometryPathRecorder
                     [qVal.W qVal.X qVal.Y qVal.Z]);
                 duration = rostime('now')-START_TIME;
                 duration_secs = duration.Sec+duration.Nsec*10^-9;
-                if (duration_secs > 10 && obj.BAGFILE == false)
+                if (duration_secs > 10)
                     obj.doControl( pose, duration_secs);
                 end
             else
@@ -140,28 +133,30 @@ classdef PurePursuitController_Student < OdometryPathRecorder
                     end
                 end
                 GUI.setFigure('MAP');
-                obj.actual_path = plot(obj.actual_pathPts(1:obj.numPathPts,1), ...
-                    obj.actual_pathPts(1:obj.numPathPts,2), ':', 'Color', [1 0.5 0]);
-                if (obj.goalPtIdx > 0 && obj.numPathPts > 1)
-                    endPt = obj.wayPoints(obj.goalPtIdx,:)';
-                    if (obj.goalPtIdx-1 >= 1)
-                        startPt = obj.wayPoints(obj.goalPtIdx-1,:)';
-                    else
-                        startPt = endPt;
+                if (size(obj.actual_pathPts,1) > 0)
+                    obj.actual_path = plot(obj.actual_pathPts(1:obj.numPathPts,1), ...
+                        obj.actual_pathPts(1:obj.numPathPts,2), ':', 'Color', [1 0.5 0]);
+                    if (obj.goalPtIdx > 0 && obj.numPathPts > 1)
+                        endPt = obj.wayPoints(obj.goalPtIdx,:)';
+                        if (obj.goalPtIdx-1 >= 1)
+                            startPt = obj.wayPoints(obj.goalPtIdx-1,:)';
+                        else
+                            startPt = endPt;
+                        end
+                        %error_image = strcat(obj.namespace,'ERROR');
+                        error_image = 'ERROR';
+                        GUI.setFigure(error_image, obj.namespace);
+                        queryPt = pose.position(1:2)';
+                        closestPt = PurePursuitController_Student.closestPointOnSegment( startPt, endPt, queryPt);
+                        obj.pathError(obj.numPathPts) = norm(closestPt-queryPt);
+                        totalError = trapz(obj.recorded_times(1:obj.numPathPts), ...
+                            obj.pathError(1:obj.numPathPts));
+                        obj.path_error = plot(obj.recorded_times(1:obj.numPathPts), ...
+                            obj.pathError(1:obj.numPathPts),'r-');
+                        xlabelstr = sprintf('Total error: %0.3f Elapsed time: %0.3f (secs)', ...
+                            totalError, obj.recorded_times(obj.numPathPts));
+                        xlabel(xlabelstr);
                     end
-                    %error_image = strcat(obj.namespace,'ERROR');
-                    error_image = 'ERROR';
-                    GUI.setFigure(error_image, obj.namespace);
-                    queryPt = pose.position(1:2)';
-                    closestPt = PurePursuitController_Student.closestPointOnSegment( startPt, endPt, queryPt);
-                    obj.pathError(obj.numPathPts) = norm(closestPt-queryPt);
-                    totalError = trapz(obj.recorded_times(1:obj.numPathPts), ...
-                        obj.pathError(1:obj.numPathPts));
-                    obj.path_error = plot(obj.recorded_times(1:obj.numPathPts), ...
-                        obj.pathError(1:obj.numPathPts),'r-');
-                    xlabelstr = sprintf('Total error: %0.3f Elapsed time: %0.3f (secs)', ...
-                        totalError, obj.recorded_times(obj.numPathPts));
-                    xlabel(xlabelstr);
                 end
             end
         end
@@ -185,7 +180,7 @@ classdef PurePursuitController_Student < OdometryPathRecorder
         
         function doControl(obj, pose, duration_secs)
             
-            currentPos = pose.position(1:2)'
+            currentPos = pose.position(1:2)';
             rpy=PurePursuitController_Student.quat2rpy(pose.qorientation);
             yawAngle = rpy(3);
             if (true)

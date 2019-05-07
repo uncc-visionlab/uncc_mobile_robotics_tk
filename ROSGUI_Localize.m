@@ -51,7 +51,7 @@ classdef ROSGUI_Localize < ROSGUI
             set(h,'Visible','on');
             
             %ipaddress = '127.0.0.1';
-            ipaddress = '10.16.30.9';
+            ipaddress = '10.16.30.8';
             if (robotics.ros.internal.Global.isNodeActive==0)
                 GUI.consolePrint(strcat(...
                     'Initializing ROS node with master IP .... ', ...

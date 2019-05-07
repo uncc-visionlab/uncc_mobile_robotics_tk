@@ -26,6 +26,7 @@ classdef RGBCameraListener < handle
         latestPose
         tf_baseNode
         failedMsgCount
+        image_index
         MAX_BAD_MSGS
     end
     
@@ -82,6 +83,7 @@ classdef RGBCameraListener < handle
             image_topic = RGBCameraListener.extendTopic('/camera/rgb/image_raw', obj.namespace);
             obj.tf_baseNode = RGBCameraListener.extendTopic('/base_link', obj.namespace);
             obj.rgbCamSub = rossubscriber(image_topic,'BufferSize',2);
+            obj.image_index = 0;
             obj.failedMsgCount = 0;
             obj.MAX_BAD_MSGS = 3;
         end
@@ -144,10 +146,18 @@ classdef RGBCameraListener < handle
                 end                
                 obj.processImage(imgRGB, tfmgr, rgbCamMessage.Header.Stamp);
             else
-                fprintf('RGBCameraListener for %s ::Could not get map->base_link transform', obj.namespace);
+                fprintf(1,'RGBCameraListener for %s ::Could not get map->%s transform\n', obj.namespace, ...
+                    obj.tf_baseNode);
             end
         end
-               
+
+        function setPoseFrame(obj, frame_name)
+            if (~isempty(obj.namespace))
+                frame_name = strcat(obj.namespace,'/',frame_name);
+            end
+            obj.tfPoseFrame = frame_name;
+        end
+        
         function processImage(obj, imgRGB, tfmgr, tstamp)
             RGBCameraListener.showRGBImage(imgRGB, obj.namespace);
             obj.saveImageData(imgRGB);
@@ -158,8 +168,10 @@ classdef RGBCameraListener < handle
             imageInfo.distortionCoeffs = obj.distortionCoeffs;
             imageInfo.Kmatrix = obj.Kmatrix;
             imageInfo.Pmatrix = obj.Pmatrix;
-            disp('Saving image data to file imageData.mat');
-            save('imageData.mat','imageInfo');
+            output_filename = sprintf('imageData_%04d.mat\n',obj.image_index);
+            fprintf(1,'Saving image data to file %s',output_filename);
+            obj.image_index = obj.image_index + 1;
+            save(output_filename,'imageInfo');
         end
     end
 end
