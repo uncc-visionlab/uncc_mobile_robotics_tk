@@ -168,10 +168,12 @@ classdef RGBCameraListener < handle
             imageInfo.distortionCoeffs = obj.distortionCoeffs;
             imageInfo.Kmatrix = obj.Kmatrix;
             imageInfo.Pmatrix = obj.Pmatrix;
-            output_filename = sprintf('imageData_%04d.mat\n',obj.image_index);
+            output_filename = sprintf('imageData_%04d.mat',obj.image_index);
+            output_filename_png = sprintf('imageData_%04d.png',obj.image_index);
             fprintf(1,'Saving image data to file %s',output_filename);
             obj.image_index = obj.image_index + 1;
             save(output_filename,'imageInfo');
+            imwrite(imgRGB,output_filename_png);
         end
     end
 end

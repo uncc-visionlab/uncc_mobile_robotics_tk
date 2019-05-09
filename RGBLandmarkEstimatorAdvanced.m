@@ -6,6 +6,7 @@ classdef RGBLandmarkEstimatorAdvanced < RGBLandmarkEstimator
         numClasses
         NLOG_PROB_THRESHOLD
         MIN_BALL_SIZE_PIXELS
+        MAX_BALL_SIZE_PIXELS
         %UNASSIGNED_COST
         %STATE_EVOLUTION_MODEL
         gaussFilter
@@ -16,7 +17,8 @@ classdef RGBLandmarkEstimatorAdvanced < RGBLandmarkEstimator
             obj@RGBLandmarkEstimator(namespace);
             obj.VERBOSE = true;
             % 1 = RED, 2 = GREEN, 3 = BLUE, 4 = YELLOW, 5 = ORANGE
-            obj.classInfo = load('rgb_landmark_classifier/class_training_data.mat');            
+            %obj.classInfo = load('rgb_landmark_classifier/class_training_data.mat');            
+            obj.classInfo = load('rgb_landmark_classifier/class_training_data_SLAM.mat');            
             %% APPLY THE CLASSIFIERS
             obj.numClasses = 5;
             landmarkColors = zeros(obj.numClasses,3);
@@ -29,7 +31,8 @@ classdef RGBLandmarkEstimatorAdvanced < RGBLandmarkEstimator
             obj.NLOG_PROB_THRESHOLD = 13;
             % Detection Region size threshold for pixel region classified as object
             % detected_object_class_c = region.area_pixels > MIN_BALL_SIZE_PIXELS
-            obj.MIN_BALL_SIZE_PIXELS = 225;
+            obj.MIN_BALL_SIZE_PIXELS = 10;
+            obj.MAX_BALL_SIZE_PIXELS = 540;
             % Maximum allowable error between a track and a detection
             % Used to assign detected object to existing object tracks
             %obj.UNASSIGNED_COST = 99;
@@ -58,6 +61,7 @@ classdef RGBLandmarkEstimatorAdvanced < RGBLandmarkEstimator
             catch exception
                 fprintf(1,'Error: %s\n',getReport(exception));
             end
+            %obj.processImage@RGBCameraListener(imgRGB);
             %[idxs,centers,radii, signatures] = RGBLandmarkEstimator.findColoredSpheres( ...
             %    imgRGB, obj.landmarkColors);
             GUI.setFigure('IMAGE', obj.namespace);
@@ -182,17 +186,18 @@ classdef RGBLandmarkEstimatorAdvanced < RGBLandmarkEstimator
             num_colors = size(landmark_colors,1);
             for labelVal=1:num_colors
                 [y,x]=find(labelVal==img_seg);
-                numpts=length(y);
-                if (numpts > obj.MIN_BALL_SIZE_PIXELS)
+                numpts=length(y)
+                if (numpts > obj.MIN_BALL_SIZE_PIXELS && ...
+                        numpts < obj.MAX_BALL_SIZE_PIXELS)
                     xy_center = mean([x y]);
                     zero_ctr = [x y]-ones(numpts,1)*xy_center;
                     covMat = (1/(numpts-1)) * (zero_ctr'*zero_ctr);
                     eigVals = eig(covMat);
-                    ecc = abs(1-eigVals(1)/eigVals(2));
+                    ecc = abs(1-eigVals(1)/eigVals(2))
                     %fprintf(1,'Detected class %d eigvals (%f,%f) ecc %f\n', ...
                     %    labelVal, eigVals(1), eigVals(2), ecc);
                     if (ecc < 0.4)
-                        v = 2*sqrt(max(eigVals));
+                        radius = 2*sqrt(max(eigVals));
                         idxs=[idxs; labelVal];
                         centers=[centers; xy_center];
                         signatures=[signatures; landmark_colors(labelVal,:)];
