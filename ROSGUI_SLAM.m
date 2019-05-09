@@ -17,9 +17,9 @@ classdef ROSGUI_SLAM < ROSGUI
             %addpath('./bfl/pdf');
             %addpath('./bfl/model');
             %addpath('./robot_pose_ekf');
-            SIMULATE = true;
+            SIMULATE = false;
             ACTIVATE_KOBUKI = true;
-            BAGFILE = false;
+            BAGFILE = true;
             if (SIMULATE)
                 WORLD_MAP_INDEX = 3;
                 BUILD_GAZEBO_WORLD = true;
@@ -54,7 +54,7 @@ classdef ROSGUI_SLAM < ROSGUI
             %set(h,'Color',[0.5 0.5 0.5]);
             
             %ipaddress = '127.0.0.1';
-            ipaddress = '10.16.30.8';
+            ipaddress = '10.16.30.12';
             if (robotics.ros.internal.Global.isNodeActive==0)
                 GUI.consolePrint(strcat(...
                     'Initializing ROS node with master IP .... ', ...
@@ -73,6 +73,10 @@ classdef ROSGUI_SLAM < ROSGUI
                 end
             end
             START_TIME = rostime('now');
+            
+            if (BAGFILE)
+                rosparam('set', '/use_sim_time', true)
+            end
             
             if (BUILD_GAZEBO_WORLD)
                 GAZEBO_SIM = true;
@@ -168,9 +172,9 @@ classdef ROSGUI_SLAM < ROSGUI
                 if (isa(kobuki.localizationEKF,'EKF_SLAM_Student') || ...
                         isa(kobuki.localizationEKF,'EKF_SLAM'))
                     %kobuki.localizationEKF.setTransformer(world_mat.tfmgr);
-                    kobuki.localizationEKF.setCallbackRate(1, world_mat.tfmgr);
                     kobuki.localizationEKF.setLandmarkTopic('landmarks');
                     kobuki.localizationEKF.setControlInputTopic('/mobile_base/commands/velocity');
+                    kobuki.localizationEKF.setCallbackRate(1, world_mat.tfmgr);
                     if (isa(kobuki.velocityController,'OdometryListener'))
                         %kobuki.velocityController.setOdometryTopic('ekf_loc')
                         %kobuki.velocityController.maxLinearVelocity = 0.1;
