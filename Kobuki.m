@@ -43,8 +43,8 @@ classdef Kobuki < handle
             
             %obj.rgbCamListener = RGBCameraListener(namespace);
             %obj.rgbCamListener = RGBLandmarkEstimator(namespace);
-            obj.rgbCamListener = RGBLandmarkEstimator_Student(namespace);
-            %obj.rgbCamListener = RGBLandmarkEstimatorAdvanced(namespace);
+            %obj.rgbCamListener = RGBLandmarkEstimator_Student(namespace);
+            obj.rgbCamListener = RGBLandmarkEstimatorAdvanced(namespace);
 
             %obj.odometryListener = OdometryPathRecorder(obj, namespace);
             %obj.odometryListener = OdometryListener(obj);
